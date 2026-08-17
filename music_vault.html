@@ -516,6 +516,29 @@ body{
   .view{padding:14px;}
   .genre-columns,.top-grid,.stats-grid,.genre-breakdown{grid-template-columns:1fr;}
 }
+
+@media(max-width:700px){
+  /* nawigacja: zawijanie + scrollowalne taby zamiast ściskania */
+  .topnav{flex-wrap:wrap;height:auto;min-height:56px;padding:8px 12px;row-gap:8px;}
+  .topnav-left{flex-wrap:wrap;row-gap:8px;flex:1 1 100%;}
+  .logo{flex:1 1 auto;}
+  .tab-nav{flex:1 1 100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap;}
+  .tab-nav::-webkit-scrollbar{display:none;}
+  .tab-btn{flex-shrink:0;}
+  .topnav-right{flex:1 1 100%;flex-wrap:wrap;justify-content:flex-end;row-gap:6px;}
+  #user-email{display:none;}
+
+  /* formularze: jedna kolumna zamiast ciasnych dwóch */
+  .form-row{grid-template-columns:1fr;}
+
+  /* nagłówek modala szczegółów artysty: zawijaj zamiast ściskać w jedną linię */
+  .modal-header{flex-wrap:wrap;row-gap:8px;}
+  #overlay-detail .modal-header>div:last-child{flex-wrap:wrap;width:100%;justify-content:flex-start;}
+
+  /* wiersz albumu: pozwól zawinąć akcje pod spód, gdy brakuje miejsca */
+  .album-row{flex-wrap:wrap;}
+  .album-actions{margin-left:auto;}
+}
 </style>
 </head>
 <body>
