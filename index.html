@@ -37,11 +37,10 @@
 }
 
 html, body {
-  height: 100%;
+  min-height: 100%;
   background: var(--black);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  overflow: hidden;
 }
 
 /* ── NOISE TEXTURE ── */
@@ -91,7 +90,7 @@ body::after {
 .hub {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   position: relative;
   z-index: 1;
 }
@@ -198,97 +197,74 @@ body::after {
   color: #fff;
 }
 
-/* ── CAROUSEL AREA ── */
-.carousel-area {
+/* ── GRID AREA ── */
+.grid-area {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   position: relative;
-  overflow: hidden;
-  padding: 30px 0;
+  padding: 36px 40px 44px;
 }
 
 /* background glow */
-.carousel-area::before {
+.grid-area::before {
   content: '';
   position: absolute;
-  width: 600px;
-  height: 600px;
+  width: 700px;
+  height: 700px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(139,0,0,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(139,0,0,0.06) 0%, transparent 70%);
   pointer-events: none;
-  transition: opacity 0.5s;
-  top: 50%;
+  top: 0;
   left: 50%;
-  transform: translate(-50%,-50%);
+  transform: translate(-50%,-30%);
+  z-index: -1;
 }
 
-/* ── ARROWS ── */
-.arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 52px;
-  height: 52px;
-  background: rgba(26,26,26,0.9);
-  border: 1px solid var(--border2);
-  color: var(--muted);
-  font-size: 1.2em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  z-index: 20;
-  clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
-}
-.arrow:hover {
-  background: var(--red);
-  border-color: var(--red2);
-  color: var(--text);
-  box-shadow: 0 0 20px rgba(139,0,0,0.4);
-}
-.arrow-left  { left: 40px; }
-.arrow-right { right: 40px; clip-path: polygon(0% 0%, 90% 0%, 100% 100%, 10% 100%); }
-
-/* ── CARD TRACK (pozycjonowanie absolutne = wsparcie dla pętli nieskończonej) ── */
-.card-track {
-  position: relative;
-  width: 100%;
+/* ── CARDS GRID ── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 22px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* ── CARD ── */
 .card {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 420px;
-  height: 500px;
+  width: 100%;
+  min-height: 320px;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              opacity 0.55s ease,
-              filter 0.55s ease;
-  transform-origin: center center;
+  display: block;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: cardIn 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes cardIn {
+  to { opacity: 1; transform: none; }
 }
 
-.card.active {
-  opacity: 1;
-  filter: none;
-  z-index: 5;
+.card .card-inner {
+  border-color: rgba(139,0,0,0.5);
+  box-shadow:
+    0 0 0 1px rgba(139,0,0,0.2),
+    0 20px 60px rgba(0,0,0,0.8),
+    0 0 40px rgba(139,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.04);
 }
-.card.adjacent {
-  opacity: 0.45;
-  filter: blur(1px) grayscale(0.3);
-  z-index: 3;
+.card:hover .card-inner {
+  border-color: var(--red2);
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 0 1px rgba(179,0,0,0.4),
+    0 24px 70px rgba(0,0,0,0.9),
+    0 0 60px rgba(139,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.06);
 }
-.card.far {
-  opacity: 0.2;
-  filter: blur(2px) grayscale(0.6);
-  z-index: 1;
-}
+.card .card-corner { border-color: rgba(139,0,0,0.4); }
+.card .card-tags .tag { border-color: rgba(139,0,0,0.35); color: rgba(232,232,232,0.55); }
+.card .card-footer { border-top-color: rgba(139,0,0,0.2); }
+.card:hover .card-arrow-icon { opacity: 1; transform: none; }
 
 .card-inner {
   width: 100%;
@@ -297,26 +273,10 @@ body::after {
   border: 1px solid var(--border);
   position: relative;
   overflow: hidden;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
   display: flex;
   flex-direction: column;
-}
-
-.card.active .card-inner {
-  border-color: rgba(139,0,0,0.5);
-  box-shadow:
-    0 0 0 1px rgba(139,0,0,0.2),
-    0 20px 60px rgba(0,0,0,0.8),
-    0 0 40px rgba(139,0,0,0.12),
-    inset 0 1px 0 rgba(255,255,255,0.04);
-}
-.card.active:hover .card-inner {
-  border-color: var(--red2);
-  box-shadow:
-    0 0 0 1px rgba(179,0,0,0.4),
-    0 24px 70px rgba(0,0,0,0.9),
-    0 0 60px rgba(139,0,0,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+  height: 100%;
 }
 
 /* top accent bar */
@@ -426,11 +386,6 @@ body::after {
   color: var(--muted);
   font-weight: 500;
 }
-.card.active .tag {
-  border-color: rgba(139,0,0,0.35);
-  color: rgba(232,232,232,0.55);
-}
-
 .card-footer {
   padding: 14px 28px;
   border-top: 1px solid var(--border);
@@ -440,7 +395,6 @@ body::after {
   position: relative;
   z-index: 1;
 }
-.card.active .card-footer { border-top-color: rgba(139,0,0,0.2); }
 
 .card-filename {
   font-family: 'Rajdhani', sans-serif;
@@ -461,75 +415,22 @@ body::after {
   transform: none;
 }
 
-/* ── DOTS ── */
-.dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 0 28px;
-  flex-shrink: 0;
-}
-.dot {
-  width: 6px;
-  height: 6px;
-  background: var(--coal2);
-  border-radius: 1px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-.dot.active {
-  background: var(--red2);
-  width: 24px;
-  box-shadow: 0 0 8px rgba(179,0,0,0.5);
-}
-
-/* ── KEYBOARD HINT ── */
-.keyboard-hint {
-  position: absolute;
-  bottom: 14px;
-  right: 40px;
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 0.62em;
-  letter-spacing: 2px;
-  color: rgba(255,255,255,0.12);
-  text-transform: uppercase;
-}
-
-/* ── INDEX COUNTER ── */
-.index-counter {
-  font-family: 'Orbitron', monospace;
-  font-size: 0.72em;
-  letter-spacing: 3px;
-  color: var(--muted);
-  text-align: center;
-  padding: 0 0 4px;
-  flex-shrink: 0;
-}
-.index-counter span { color: var(--red2); }
-
-/* ── PROGRESS BAR ── */
-.progress-bar {
-  height: 1px;
-  background: var(--border);
-  flex-shrink: 0;
-  position: relative;
-  margin: 0 40px;
-}
-.progress-fill {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  background: linear-gradient(90deg, var(--red), var(--red2));
-  transition: width 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 0 8px rgba(179,0,0,0.4);
-}
-
 @media (max-width: 900px) {
   .header { padding: 16px 20px 14px; }
-  .arrow-left  { left: 10px; width: 40px; height: 40px; }
-  .arrow-right { right: 10px; width: 40px; height: 40px; }
   .brand-logo { width: 30px; height: 30px; min-width: 30px; }
   .brand-name { font-size: 1.2em; letter-spacing: 5px; }
-  .keyboard-hint { display: none; }
+  .grid-area { padding: 24px 20px 32px; }
+  .cards-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+}
+
+@media (max-width: 600px) {
+  .header { flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 16px 12px; }
+  .header-right { text-align: left; width: 100%; }
+  .user-panel { justify-content: flex-start; }
+  .grid-area { padding: 18px 14px 28px; }
+  .cards-grid { grid-template-columns: 1fr; gap: 14px; }
+  .card { min-height: 260px; }
+  .card-body { padding: 24px 20px 18px; }
 }
 </style>
 </head>
@@ -556,27 +457,10 @@ body::after {
     </div>
   </header>
 
-  <!-- CAROUSEL -->
-  <div class="carousel-area">
-    <button class="arrow arrow-left" id="arrow-left" onclick="navClick(-1)">&#8592;</button>
-    <div style="overflow:hidden;width:100%;display:flex;justify-content:center;">
-      <div class="card-track" id="card-track"></div>
-    </div>
-    <button class="arrow arrow-right" id="arrow-right" onclick="navClick(1)">&#8594;</button>
+  <!-- GRID -->
+  <div class="grid-area">
+    <div class="cards-grid" id="cards-grid"></div>
   </div>
-
-  <!-- INDEX -->
-  <div class="index-counter" id="index-counter"></div>
-
-  <!-- DOTS -->
-  <div class="dots" id="dots"></div>
-
-  <!-- PROGRESS -->
-  <div class="progress-bar">
-    <div class="progress-fill" id="progress-fill"></div>
-  </div>
-
-  <div class="keyboard-hint">← → NAWIGACJA &nbsp;·&nbsp; ENTER OTWÓRZ</div>
 
 </div>
 
@@ -629,16 +513,6 @@ const CARDS = [
   }
 ];
 
-// current jest wartością WIRTUALNĄ (nieograniczoną) - może rosnąć/maleć bez końca.
-// Dzięki temu karuzela może "kręcić się" w nieskończoność w obie strony.
-let current = 0;
-let isAnimating = false;
-
-function realIndex(v){
-  const N = CARDS.length;
-  return ((v % N) + N) % N;
-}
-
 // ─────────────────────────────────────────────
 // DŹWIĘK NAWIGACJI
 // Domyślnie odtwarzany jest krótki syntetyzowany "blip" przez Web Audio API,
@@ -685,14 +559,8 @@ function playNavSound(){
 
 // ── BUILD CARDS ──
 function buildCards(){
-  const track = document.getElementById('card-track');
-  const dots  = document.getElementById('dots');
-  track.innerHTML = '';
-  dots.innerHTML  = '';
-
-  const CARD_W = window.innerWidth <= 900 ? 320 : 420;
-  const CARD_H = window.innerWidth <= 900 ? 430 : 500;
-  track.style.height = CARD_H + 'px';
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = '';
 
   CARDS.forEach((c, i) => {
     const el = document.createElement('a');
@@ -700,14 +568,10 @@ function buildCards(){
     el.href = c.href;
     el.target = '_blank';
     el.rel = 'noopener';
-    el.style.width = CARD_W + 'px';
-    el.style.height = CARD_H + 'px';
+    el.style.animationDelay = (i * 0.06) + 's';
     el.dataset.index = i;
 
-    // blokuj otwarcie linku gdy karta nie jest aktywna
-    el.addEventListener('click', e => {
-      if(i !== realIndex(current)){ e.preventDefault(); return; }
-    });
+    el.addEventListener('click', () => playNavSound());
 
     el.innerHTML = `
       <div class="card-inner">
@@ -727,117 +591,9 @@ function buildCards(){
           <span class="card-arrow-icon">→</span>
         </div>
       </div>`;
-    track.appendChild(el);
-
-    // dot
-    const dot = document.createElement('div');
-    dot.className = 'dot';
-    dot.onclick = () => goTo(i);
-    dots.appendChild(dot);
+    grid.appendChild(el);
   });
-
-  updatePositions(false);
 }
-
-// Pozycjonuje każdą kartę względem NAJBLIŻSZEJ (w sensie kołowym) reprezentacji
-// jej indeksu wobec bieżącego `current`. Dzięki temu ostatnia karta "podchodzi"
-// tuż za pierwszą (i odwrotnie), co daje płynną, nieskończoną pętlę.
-function updatePositions(animate = true){
-  const N = CARDS.length;
-  const cards = Array.from(document.querySelectorAll('.card'));
-  if(!cards.length) return;
-  const CARD_W = parseInt(cards[0].style.width) || 420;
-  const SPACING = CARD_W * 0.88;
-  const rIndex = realIndex(current);
-
-  if(!animate){
-    cards.forEach(c => c.style.transition = 'none');
-  }
-
-  cards.forEach((card, i) => {
-    // najbliższa "wirtualna" pozycja karty i względem current (pętla kołowa)
-    const vpos = i + Math.round((current - i) / N) * N;
-    const diff = vpos - current;
-    const absDiff = Math.abs(diff);
-
-    card.classList.remove('active','adjacent','far');
-    let scale;
-    if(absDiff === 0){ card.classList.add('active'); scale = 1; }
-    else if(absDiff === 1){ card.classList.add('adjacent'); scale = 0.82; }
-    else { card.classList.add('far'); scale = 0.68; }
-
-    card.style.transform = `translate(-50%, -50%) translateX(${diff * SPACING}px) scale(${scale})`;
-  });
-
-  // dots
-  document.querySelectorAll('.dot').forEach((d,i) => {
-    d.classList.toggle('active', i === rIndex);
-  });
-
-  // index counter
-  document.getElementById('index-counter').innerHTML =
-    `<span>${rIndex + 1}</span> / ${N}`;
-
-  // progress bar
-  document.getElementById('progress-fill').style.width =
-    ((rIndex / (N - 1)) * 100) + '%';
-
-  if(!animate){
-    // wymuś reflow, potem przywróć przejścia
-    void document.getElementById('card-track').offsetHeight;
-    cards.forEach(c => c.style.transition = '');
-  }
-}
-
-// dir: -1 (wstecz) / 1 (dalej). Brak ograniczeń zakresu -> pętla nieskończona:
-// z ostatniej karty "dalej" przechodzi płynnie do pierwszej i odwrotnie.
-function move(dir){
-  if(isAnimating) return;
-  isAnimating = true;
-  current += dir;
-  updatePositions(true);
-  setTimeout(() => { isAnimating = false; }, 580);
-}
-
-// wrapper wywoływany z przycisków strzałek: odtwarza dźwięk + nawiguje
-function navClick(dir){
-  playNavSound();
-  move(dir);
-}
-
-function goTo(i){
-  if(isAnimating) return;
-  const N = CARDS.length;
-  const rIndex = realIndex(current);
-  if(i === rIndex) return;
-  // wybierz najkrótszą drogę po okręgu (przez "koniec-początek" jeśli krócej)
-  let diff = i - rIndex;
-  if(diff > N / 2) diff -= N;
-  if(diff < -N / 2) diff += N;
-  isAnimating = true;
-  current += diff;
-  updatePositions(true);
-  setTimeout(() => { isAnimating = false; }, 580);
-}
-
-// ── KEYBOARD ──
-document.addEventListener('keydown', e => {
-  if(e.key === 'ArrowLeft')  move(-1);
-  if(e.key === 'ArrowRight') move(1);
-  if(e.key === 'Enter'){
-    window.open(CARDS[realIndex(current)].href, '_blank', 'noopener');
-  }
-});
-
-// ── TOUCH SWIPE ──
-let touchX = null;
-document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, {passive:true});
-document.addEventListener('touchend', e => {
-  if(touchX === null) return;
-  const diff = touchX - e.changedTouches[0].clientX;
-  if(Math.abs(diff) > 50) move(diff > 0 ? 1 : -1);
-  touchX = null;
-}, {passive:true});
 
 // ── CLOCK ──
 function updateClock(){
@@ -852,7 +608,6 @@ setInterval(updateClock, 1000);
 
 // ── INIT ──
 buildCards();
-window.addEventListener('resize', () => { buildCards(); });
 </script>
 </body>
 </html>
