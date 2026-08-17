@@ -566,7 +566,9 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 
 <div class="view" id="view-platyny">
   <div class="plat-export-bar">
+    <button class="btn" onclick="document.getElementById('platImportInput').click()">📥 Importuj z TXT</button>
     <button class="btn" onclick="exportPlatyny()">📄 Eksportuj jako TXT</button>
+    <input type="file" id="platImportInput" accept=".txt" onchange="importPlatyny(event)" style="display:none">
   </div>
   <div class="plat-columns">
     <!-- W TRAKCIE -->
@@ -1418,6 +1420,36 @@ function exportPlatyny(){
   a.href=URL.createObjectURL(blob);
   a.download='platyny.txt'; a.click();
   showToast('📄 Pobrano platyny.txt');
+}
+
+function importPlatyny(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const headerMap = {'W TRAKCIE':'wip','DO ZDOBYCIA':'todo','MAM PLATYNĘ':'done'};
+    let col = 'done', added = 0, skipped = 0;
+    String(e.target.result).split(/\r?\n/).forEach(raw=>{
+      const line = raw.trim();
+      if(!line) return;
+      const upper = line.toUpperCase();
+      if(headerMap[upper]){ col = headerMap[upper]; return; }
+      if(line==='* (brak)' || line==='(brak)') return;
+      let name = line.startsWith('*') ? line.slice(1).trim() : line;
+      let achDone=null, achTotal=null;
+      const m = name.match(/^(.*?)\s*\((\d+)\/(\d+)\s*osiągnięć\)\s*$/i);
+      if(m){ name = m[1].trim(); achDone=parseInt(m[2]); achTotal=parseInt(m[3]); }
+      if(!name) return;
+      const exists = platState[col].some(x=>x.name.toLowerCase()===name.toLowerCase());
+      if(exists){ skipped++; return; }
+      platState[col].push({ id:'p'+Date.now()+Math.random().toString(36).slice(2,7), name, achDone, achTotal });
+      added++;
+    });
+    platSave(); renderPlatyny();
+    showToast(`📥 Zaimportowano ${added}${skipped?`, pominięto ${skipped} (już były)`:''}`);
+  };
+  reader.readAsText(file, 'utf-8');
+  event.target.value = '';
 }
 
 platLoad();
