@@ -4,14 +4,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
 <script>
-  requireAuth(); // blokuje render, jeśli brak sesji
+  requireAuth().then(session => {
+    if (session) {
+      const emailEl = document.getElementById('user-email');
+      if (emailEl) emailEl.textContent = session.user.email;
+    }
+  });
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEXUS</title>
-<link rel="icon" type="image/png" sizes="32x32" href="grafiki/akatsuki_logo.png">
-<link rel="shortcut icon" type="image/png" href="grafiki/akatsuki_logo.png">
-<link rel="apple-touch-icon" href="grafiki/akatsuki_logo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="akatsuki_logo.png">
+<link rel="shortcut icon" type="image/png" href="akatsuki_logo.png">
+<link rel="apple-touch-icon" href="akatsuki_logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -162,6 +167,35 @@ body::after {
   color: var(--text);
   display: block;
   font-weight: 600;
+}
+
+.user-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+#user-email {
+  font-size: 0.85em;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+#logout-btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8em;
+  letter-spacing: 1px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+#logout-btn:hover {
+  border-color: var(--text);
+  color: #fff;
 }
 
 /* ── CAROUSEL AREA ── */
@@ -490,13 +524,13 @@ body::after {
 </style>
 </head>
 <body>
-<img class="bg-watermark" src="grafiki/akatsuki_logo.png" alt="" aria-hidden="true">
+<img class="bg-watermark" src="akatsuki_logo.png" alt="" aria-hidden="true">
 <div class="hub">
 
   <!-- HEADER -->
   <header class="header">
     <div class="brand">
-      <img class="brand-logo" src="grafiki/akatsuki_logo.png" alt="Akatsuki Logo">
+      <img class="brand-logo" src="akatsuki_logo.png" alt="Akatsuki Logo">
       <div class="brand-text">
         <div class="brand-name">N<span>E</span>XUS</div>
         <div class="brand-sub">Personal Dashboard</div>
@@ -505,6 +539,10 @@ body::after {
     <div class="header-right">
       <span id="clock">00:00:00</span>
       <span id="date-str"></span>
+      <div class="user-panel">
+        <span id="user-email"></span>
+        <button id="logout-btn" onclick="logout()">Wyloguj</button>
+      </div>
     </div>
   </header>
 
