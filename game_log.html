@@ -349,6 +349,39 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 @media(max-width:700px){.plat-columns{grid-template-columns:1fr;}}
 
 @media(max-width:600px){.nav{padding:0 12px;}.view{padding:12px;}.nav-tab{padding:6px 8px;font-size:0.7em;}.upcoming-columns,.backlog-grid{grid-template-columns:1fr;}}
+
+/* ── MOBILE ── */
+@media(max-width:700px){
+  /* nawigacja: zawijanie + scrollowalne taby zamiast ściskania */
+  .nav{flex-wrap:wrap;height:auto;min-height:56px;padding:8px 12px;row-gap:8px;}
+  .nav-brand{order:1;flex:1 1 auto;font-size:0.9em;}
+  .nav-actions{order:2;flex-wrap:wrap;row-gap:6px;justify-content:flex-end;}
+  .nav-tabs{order:3;flex:1 1 100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap;}
+  .nav-tabs::-webkit-scrollbar{display:none;}
+  .nav-tab{flex-shrink:0;}
+  #user-email{display:none;}
+
+  /* lista gier: karty zamiast ściśniętej tabeli 7-kolumnowej */
+  .log-table-header{display:none;}
+  .game-row{display:flex !important;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:12px;}
+  .game-row > div:first-child{flex:1 1 100%;}
+  .game-cell[style*="text-align:center"]{margin-left:auto;}
+  .game-actions{margin-left:auto;}
+
+  /* platyny: akcje muszą być widoczne bez hover na dotyku */
+  .plat-item-actions{opacity:1;flex-wrap:wrap;justify-content:flex-end;}
+  .plat-item{flex-wrap:wrap;}
+
+  /* formularze: jedna kolumna zamiast ciasnych dwóch */
+  .frow{grid-template-columns:1fr;}
+
+  /* podgląd gry: nigdy szerszy niż ekran */
+  .preview-popup{max-width:calc(100vw - 24px);min-width:0;}
+}
+
+@media(max-width:400px){
+  .nav-actions .btn-accent{padding:6px 10px;font-size:0.75em;}
+}
 </style>
 </head>
 <body>
@@ -1177,7 +1210,9 @@ function showPreview(e, id){
   const winW = window.innerWidth, winH = window.innerHeight;
   let top = rect.bottom + 8, left = rect.left;
   if(left + 360 > winW) left = winW - 368;
+  if(left < 8) left = 8;
   if(top + 320 > winH) top = rect.top - 328;
+  if(top < 8) top = 8;
   popup.style.top = top + 'px';
   popup.style.left = left + 'px';
   popup.classList.add('show');
