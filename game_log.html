@@ -602,10 +602,54 @@ const SK='game_log_v2';
 let state={games:[],upcoming:[],backlog:[]};
 let editGameId=null,editUpcomingId=null,editBacklogId=null;
 
-function save(){localStorage.setItem(SK,JSON.stringify(state));}
+// ── CLOUD SYNC (Supabase) ──
+let cloudSaveTimer=null;
+function save(){
+  localStorage.setItem(SK,JSON.stringify(state));
+  scheduleCloudSave();
+}
 function load(){
   const s=localStorage.getItem(SK)||localStorage.getItem('game_log_v1');
   if(s){try{const p=JSON.parse(s);if(p&&typeof p==='object'){if(Array.isArray(p.games))state.games=p.games;if(Array.isArray(p.upcoming))state.upcoming=p.upcoming;if(Array.isArray(p.backlog))state.backlog=p.backlog;}}catch(e){}}
+}
+function scheduleCloudSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(pushToCloud,600); // debounce, żeby nie spamować requestów
+}
+async function pushToCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  await supabaseClient.from('nexus_data').upsert({
+    user_id: session.user.id,
+    module: 'game_log',
+    data: { state, platState },
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,module' });
+}
+async function pullFromCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return false;
+  const { data, error } = await supabaseClient
+    .from('nexus_data')
+    .select('data')
+    .eq('user_id', session.user.id)
+    .eq('module', 'game_log')
+    .maybeSingle();
+  if(error || !data) return false;
+  const p = data.data;
+  if(p.state && typeof p.state==='object'){
+    if(Array.isArray(p.state.games))state.games=p.state.games;
+    if(Array.isArray(p.state.upcoming))state.upcoming=p.state.upcoming;
+    if(Array.isArray(p.state.backlog))state.backlog=p.state.backlog;
+  }
+  if(p.platState && typeof p.platState==='object'){
+    if(Array.isArray(p.platState.wip))platState.wip=p.platState.wip;
+    if(Array.isArray(p.platState.todo))platState.todo=p.platState.todo;
+    if(Array.isArray(p.platState.done))platState.done=p.platState.done;
+  }
+  localStorage.setItem(SK,JSON.stringify(state));
+  localStorage.setItem(PLAT_SK,JSON.stringify(platState));
+  return true;
 }
 
 // ── TIME ──
@@ -1187,7 +1231,7 @@ const PLAT_SK = 'game_log_platyny_v1';
 let platState = { wip:[], todo:[], done:[] };
 // item: {id, name}
 
-function platSave(){ localStorage.setItem(PLAT_SK, JSON.stringify(platState)); }
+function platSave(){ localStorage.setItem(PLAT_SK, JSON.stringify(platState)); scheduleCloudSave(); }
 function platLoad(){
   const s = localStorage.getItem(PLAT_SK);
   if(s){ try{ const p=JSON.parse(s); if(p&&typeof p==='object'){ if(Array.isArray(p.wip))platState.wip=p.wip; if(Array.isArray(p.todo))platState.todo=p.todo; if(Array.isArray(p.done))platState.done=p.done; }}catch(e){} }
@@ -1340,11 +1384,14 @@ platLoad();
 load();
 renderAll();
 
-requireAuth().then(session => {
+requireAuth().then(async session => {
   if (session) {
     document.body.style.visibility = 'visible';
     const emailEl = document.getElementById('user-email');
     if (emailEl) emailEl.textContent = session.user.email;
+
+    const gotCloudData = await pullFromCloud();
+    if (gotCloudData) renderAll(); // dane z chmury nadpisały lokalne — odśwież widok
   }
 });
 </script>
