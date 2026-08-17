@@ -50,8 +50,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .year-group{margin-bottom:24px;}
 .year-heading{font-family:'Orbitron',monospace;font-size:0.7em;letter-spacing:4px;color:var(--accent);padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:2px;display:flex;align-items:center;justify-content:space-between;}
 .year-count{font-size:0.85em;color:var(--muted);letter-spacing:1px;}
-.log-table-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 56px auto;gap:8px;padding:6px 12px;font-size:0.62em;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
-.game-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 56px auto;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background 0.15s;cursor:pointer;}
+.log-table-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 92px auto;gap:8px;padding:6px 12px;font-size:0.62em;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
+.game-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 92px auto;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background 0.15s;cursor:pointer;}
 .game-row:hover{background:rgba(179,0,0,0.04);}
 .game-row:last-child{border-bottom:none;}
 .game-row.nth-2:hover{background:rgba(179,0,0,0.04);}
@@ -60,11 +60,11 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .replay-badge{display:inline-flex;align-items:center;font-family:'Orbitron',monospace;font-size:0.62em;font-weight:700;letter-spacing:0.5px;}
 .replay-badge.r2{color:var(--accent);}
 .replay-badge.r3plus{color:var(--gold);}
-.status-icons{display:flex;align-items:center;justify-content:center;}
+.status-icons{display:flex;align-items:center;justify-content:center;gap:2px;}
 .status-slot{display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .status-slot.replay{width:26px;}
-.status-slot.steam{width:20px;}
-.status-slot.plat{width:20px;}
+.status-slot.steam{width:22px;}
+.status-slot.plat{width:34px;}
 .plat-badge{display:inline-flex;align-items:center;font-size:0.62em;letter-spacing:1.5px;padding:2px 6px;border:1px solid rgba(176,199,212,0.8);color:#b0c7d4;background:rgba(176,199,212,0.14);text-shadow:0 0 8px rgba(176,199,212,0.8);box-shadow:0 0 6px rgba(176,199,212,0.3);}.game-title{font-size:0.9em;font-weight:500;}
 .game-cell{font-size:0.78em;color:var(--muted);}
 .game-cell.mono{font-family:'Orbitron',monospace;font-size:0.7em;}
@@ -428,7 +428,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
           <option value="title">Sortuj: tytuł</option>
         </select>
       </div>
-      <div class="log-table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 56px auto">
+      <div class="log-table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 92px auto">
         <span>Tytuł</span><span>Gatunek</span><span>Platforma</span>
         <span>Premiera</span><span>Czas</span><span style="text-align:center"><img src="platinum.png" alt="Platyna" class="icon-plat"></span><span></span>
       </div>
@@ -806,7 +806,7 @@ function steamBadge(s){
 function gameRow(g){
   const pc=pClass(g.platform),mins=parseTime(g.time),nth=nthPlay(g);
   const nc=nth===2?'nth-2':nth===3?'nth-3':nth>3?'nth-n':'';
-  return`<div class="game-row ${nc}" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 56px auto" onclick="showPreview(event,'${g.id}')">
+  return`<div class="game-row ${nc}" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 92px auto" onclick="showPreview(event,'${g.id}')">
     <div>
       <div class="game-title">${g.title} ${steamBadge(g.steam||'')}</div>
       ${g.note?`<div style="font-size:0.7em;color:var(--muted);margin-top:1px">${g.note}</div>`:''}
