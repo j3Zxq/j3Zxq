@@ -7,8 +7,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marksman Gauntlet</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="akatsuki_logo.png">
+<link rel="shortcut icon" type="image/png" href="akatsuki_logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --gold: #b30000;
@@ -33,6 +34,8 @@
             min-height: 100vh;
             overflow-x: hidden;
             transition: background 1.2s ease;
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* ── CANVAS ── */
@@ -806,7 +809,9 @@
             display: inline-block; margin-top: 4px;
         }
 
-        /* responsive */
+        /* ══════════════════════════════════════════════
+           RESPONSIVE — TABLETS / SMALL LAPTOPS
+        ══════════════════════════════════════════════ */
         @media (max-width: 768px) {
             .layout { grid-template-columns: 1fr; }
             .sidebar {
@@ -818,11 +823,135 @@
                 border-bottom: 1px solid var(--gold-dim);
                 padding: 12px;
                 gap: 10px;
+                -webkit-overflow-scrolling: touch;
             }
             .sidebar .side-box { min-width: 180px; flex-shrink: 0; }
-            .main { padding: 16px; }
+            .main { padding: 16px; gap: 16px; }
             .synergy-grid { grid-template-columns: 1fr; }
+
+            /* nav */
+            .nav { padding: 0 14px; height: auto; min-height: 52px; flex-wrap: wrap; gap: 6px 10px; }
+            .nav-brand { font-size: 0.85em; letter-spacing: 2px; }
+            .nav-brand span { font-size: 0.7em; }
+            .nav-actions { gap: 6px; }
+            #user-email { display: none; }
+
+            /* header */
             .header h1 { font-size: 1.5em; letter-spacing: 5px; }
+            .header .subtitle { font-size: 0.72em; letter-spacing: 2px; }
+
+            /* result area */
+            .result-area { padding: 20px 14px; min-height: 280px; }
+            #champion-icon { width: 108px; height: 108px; }
+            .champ-name { font-size: 1.8em; letter-spacing: 3px; }
+            .slot-wrapper, .slot-reel, .slot-item, .slot-item img { width: 64px; height: 64px; }
+            .drawn-stats { gap: 8px; }
+            .drawn-stat { padding: 5px 10px; min-width: 60px; }
+            .drawn-stat-val { font-size: 1em; }
+
+            /* action buttons */
+            .action-btns { gap: 8px; flex-wrap: wrap; }
+            .btn-result { padding: 12px; font-size: 0.85em; letter-spacing: 2px; flex: 1 1 calc(50% - 8px); }
+            .btn-mvp { flex: 1 1 100%; order: 3; }
+
+            /* draw row */
+            .btn-draw { font-size: 1em; letter-spacing: 3px; padding: 13px; }
+
+            /* filters */
+            .filter-row { gap: 6px; }
+            .filter-btn { padding: 5px 10px; font-size: 0.72em; }
+
+            /* table */
+            .table-wrapper { -webkit-overflow-scrolling: touch; }
+            table { font-size: 0.78em; }
+            thead th { padding: 8px 6px; font-size: 0.66em; }
+            tbody td { padding: 6px; }
+            .champ-thumb { width: 24px; height: 24px; }
+            .wr-mini { width: 44px; }
+            .rank-cell { min-width: 74px; }
+
+            /* admin row */
+            .admin-row { gap: 8px; }
+            .btn-admin { padding: 5px 10px; font-size: 0.7em; }
+
+            /* modals */
+            .modal { padding: 22px 18px; width: 92%; }
+            .pick-modal { padding: 16px; width: 94%; max-height: 92vh; }
+            .pick-grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+            .pick-card img { width: 52px; height: 52px; }
+
+            /* floating elements */
+            .sound-toggle { bottom: 14px; left: 14px; padding: 7px 10px; font-size: 1em; }
+            .toast { bottom: 14px; right: 14px; left: 14px; font-size: 0.8em; padding: 10px 16px; text-align: center; }
+        }
+
+        /* ══════════════════════════════════════════════
+           RESPONSIVE — PHONES
+        ══════════════════════════════════════════════ */
+        @media (max-width: 480px) {
+            .main { padding: 12px; gap: 12px; }
+            .sidebar { padding: 10px; gap: 8px; }
+            .sidebar .side-box { min-width: 155px; padding: 10px; }
+
+            /* nav */
+            .nav { padding: 0 10px; }
+            .nav-brand { font-size: 0.75em; letter-spacing: 1px; gap: 6px; }
+            .nav-brand span { display: none; }
+            .nav-logo { width: 18px; height: 18px; min-width: 18px; }
+            .btn { padding: 5px 10px; font-size: 0.72em; }
+
+            /* header */
+            .header h1 { font-size: 1.15em; letter-spacing: 3px; }
+            .header .subtitle { font-size: 0.62em; letter-spacing: 1.5px; }
+            .url-badge { font-size: 0.62em; padding: 2px 6px; }
+
+            /* result area */
+            .result-area { padding: 16px 10px; min-height: 250px; }
+            #champion-icon { width: 88px; height: 88px; }
+            .champ-name { font-size: 1.4em; letter-spacing: 2px; }
+            .arch-badge { font-size: 0.65em; letter-spacing: 2px; }
+            .drawn-stats { gap: 6px; }
+            .drawn-stat { padding: 4px 8px; min-width: 52px; }
+            .drawn-stat-val { font-size: 0.9em; }
+            .drawn-stat-label { font-size: 0.55em; }
+
+            /* draw + pick row */
+            .draw-row { flex-direction: column; gap: 8px !important; }
+            .btn-draw { font-size: 0.9em; letter-spacing: 2px; padding: 12px; }
+
+            /* action buttons */
+            .btn-result { padding: 11px; font-size: 0.78em; letter-spacing: 1px; }
+            .btn-mvp { padding: 11px; font-size: 0.75em; }
+
+            /* filters */
+            .filter-btn { padding: 4px 8px; font-size: 0.68em; }
+
+            /* table */
+            table { font-size: 0.72em; }
+            thead th { padding: 7px 5px; font-size: 0.6em; }
+            tbody td { padding: 5px; }
+            .champ-cell { gap: 5px; }
+            .champ-thumb { width: 20px; height: 20px; }
+            .wr-mini { width: 34px; }
+            .rank-cell { min-width: 64px; }
+            .champ-rank-label { font-size: 0.6em; padding: 1px 4px; }
+            .lives-pips { gap: 2px; }
+
+            /* admin row */
+            .btn-admin { padding: 4px 8px; font-size: 0.65em; }
+
+            /* modals */
+            .modal { padding: 18px 14px; }
+            .modal h3 { font-size: 0.9em; }
+            .modal-btns button { padding: 8px 16px; font-size: 0.75em; }
+            .pick-modal h3 { font-size: 0.88em; }
+            .pick-search { padding: 7px 10px; font-size: 0.9em; }
+            .pick-grid { grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 6px; }
+            .pick-card img { width: 44px; height: 44px; }
+            .pick-card .pick-name { font-size: 0.62em; }
+
+            /* champ tooltip — narrower so it never overflows viewport */
+            .champ-tooltip { width: 168px; }
         }
     </style>
 </head>
@@ -912,7 +1041,7 @@
             </div>
         </div>
 
-        <div style="display:flex;gap:12px">
+        <div class="draw-row" style="display:flex;gap:12px">
             <button class="btn-draw" id="btn-draw" onclick="drawChampion()" style="flex:2">LOSUJ MARKSMANA</button>
             <button class="btn-draw" onclick="openPickModal()" style="flex:1;font-size:1em;letter-spacing:3px;border-color:var(--gold);color:var(--gold);background:rgba(200,155,60,0.06)">✦ WYBIERZ</button>
         </div>
