@@ -215,6 +215,16 @@
             letter-spacing: 10px;
             color: var(--gold);
             text-shadow: 0 0 30px rgba(200,155,60,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .header-icon {
+            width: 1em;
+            height: 1em;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px rgba(200,155,60,0.5));
         }
         .header .subtitle {
             font-size: 0.8em;
@@ -998,7 +1008,7 @@
     <!-- MAIN -->
     <main class="main">
         <div class="header">
-            <h1><link rel="icon" type="image/png" sizes="32x32" href="botlane.png"> MARKSMAN GAUNTLET</h1>
+            <h1><img class="header-icon" src="botlane.png" alt="Bot Lane"> MARKSMAN GAUNTLET</h1>
             <div class="subtitle">EVERY MARKSMAN. ONE SHOT.</div>
             <span class="url-badge" id="url-badge">💾 AUTO-SAVE: OK</span>
         </div>
