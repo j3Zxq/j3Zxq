@@ -36,6 +36,7 @@ body{
   background:var(--bg);
   color:var(--text);
   min-height:100vh;
+  overflow-x:hidden;
 }
 
 /* film strip top decoration */
@@ -513,13 +514,53 @@ body::before{
 
 @media(max-width:900px){
   .diary-layout{grid-template-columns:1fr;}
-  .list-table-hd,.list-row{grid-template-columns:50px 1fr 80px 80px auto;}
+  /* na tabletach chowamy kolumny Platforma i Data, żeby siatka listy się nie rozjeżdżała */
+  .list-table-hd,.list-row{grid-template-columns:50px 1fr 70px auto;}
+  .list-table-hd>*:nth-child(5),.list-row>*:nth-child(5),
+  .list-table-hd>*:nth-child(6),.list-row>*:nth-child(6){display:none;}
 }
 @media(max-width:600px){
-  .nav{padding:0 14px;}
+  .nav{
+    flex-wrap:wrap;height:auto;min-height:56px;
+    padding:10px 14px;row-gap:8px;column-gap:10px;
+  }
+  .nav-brand{order:1;}
+  .nav-actions{order:2;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;gap:6px;}
+  .nav-tabs{
+    order:3;width:100%;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    justify-content:flex-start;
+    scrollbar-width:none;
+  }
+  .nav-tabs::-webkit-scrollbar{display:none;}
+  .nav-tab{padding:6px 10px;font-size:0.72em;white-space:nowrap;flex:0 0 auto;}
+  #user-email{display:none;} /* mało miejsca — mail widoczny tylko na większych ekranach */
+
   .view{padding:14px;}
-  .nav-tab{padding:6px 8px;font-size:0.72em;}
-  .grid-layout{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));}
+  .grid-layout{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;}
+
+  .toolbar{gap:6px;}
+  .search-inp{min-width:100%;}
+  .filter-sel{flex:1;min-width:0;}
+
+  .frow{grid-template-columns:1fr;gap:0;}
+
+  .modal{width:100%;max-width:none;max-height:100vh;height:100%;}
+  .modal-bd{padding:14px;}
+  .modal-hd{padding:12px 14px;}
+  .modal-ft{padding:10px 14px;flex-wrap:wrap;}
+  .modal-ft .btn{flex:1;min-width:80px;}
+
+  .big-stat{font-size:1.8em;}
+  .stats-cards{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+  .watchlist-grid{grid-template-columns:1fr;}
+
+  /* na małym telefonie widok listy okazuje się zbyt ciasny — chowamy też Typ */
+  .list-table-hd,.list-row{grid-template-columns:44px 1fr auto;}
+  .list-table-hd>*:nth-child(3),.list-row>*:nth-child(3){display:none;}
+
+  .btn-xs{width:30px;height:30px;}
+  .toast{left:12px;right:12px;bottom:12px;text-align:center;}
 }
 </style>
 </head>
