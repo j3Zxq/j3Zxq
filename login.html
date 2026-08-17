@@ -2,24 +2,120 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>NEXUS — Logowanie</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
-    body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#eee}
-    form{display:flex;flex-direction:column;gap:10px;width:280px}
-    input{padding:8px;border-radius:4px;border:1px solid #444;background:#1e1e1e;color:#eee}
-    button{padding:8px;border-radius:4px;border:none;background:#7c3aed;color:#fff;cursor:pointer}
-    #err{color:#f87171;font-size:14px;min-height:18px}
-    #msg{color:#4ade80;font-size:14px;min-height:18px}
-    #toggle{background:none;color:#a78bfa;text-decoration:underline;padding:4px}
+    :root{
+      --bg:#0a0a0a; --bg2:#111111;
+      --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.12);
+      --text:#e8e8e8; --muted:rgba(232,232,232,0.38);
+      --accent:#b30000; --accent2:#8b0000;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html,body{height:100%;}
+    body{
+      font-family:'Rajdhani',sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      min-height:100dvh;
+      padding:24px 16px;
+      padding-top:max(24px, env(safe-area-inset-top));
+      padding-bottom:max(24px, env(safe-area-inset-bottom));
+    }
+    form{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      width:100%;
+      max-width:320px;
+      background:var(--bg2);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:28px 24px;
+    }
+    .logo-img{
+      align-self:center;
+      width:56px;
+      height:56px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 10px rgba(180,0,0,0.4));
+    }
+    h2{
+      font-family:'Orbitron',monospace;
+      text-align:center;
+      font-size:1.05em;
+      letter-spacing:2px;
+      font-weight:700;
+      color:var(--text);
+      text-shadow:0 0 16px rgba(180,0,0,0.35);
+      margin-top:4px;
+    }
+    input{
+      width:100%;
+      padding:12px 14px;
+      font-size:16px; /* zapobiega auto-zoomowi na iOS przy focus */
+      font-family:'Rajdhani',sans-serif;
+      border-radius:6px;
+      border:1px solid var(--border2);
+      background:rgba(255,255,255,0.03);
+      color:var(--text);
+      outline:none;
+      transition:border-color .2s;
+    }
+    input::placeholder{color:var(--muted);}
+    input:focus{border-color:var(--accent);}
+    #err{color:#f07070;font-size:0.85em;min-height:16px;letter-spacing:0.3px;}
+    #msg{color:#6ee7a0;font-size:0.85em;min-height:16px;letter-spacing:0.3px;}
+    button{
+      width:100%;
+      padding:13px;
+      font-size:0.95em;
+      font-family:'Rajdhani',sans-serif;
+      font-weight:600;
+      letter-spacing:1.5px;
+      text-transform:uppercase;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+      touch-action:manipulation;
+    }
+    #submitBtn{
+      background:var(--accent);
+      color:#fff;
+      transition:background .2s;
+    }
+    #submitBtn:active,#submitBtn:hover{background:var(--accent2);}
+    #toggle{
+      background:none;
+      color:var(--muted);
+      text-decoration:underline;
+      font-weight:500;
+      letter-spacing:0.3px;
+      text-transform:none;
+      padding:4px;
+      font-size:0.85em;
+    }
+    #toggle:active,#toggle:hover{color:var(--text);}
+
+    @media (max-width:400px){
+      form{padding:24px 18px;border-radius:8px;}
+      .logo-img{width:48px;height:48px;}
+    }
   </style>
 </head>
 <body>
   <form id="authForm">
-    <img src="/akatsuki_logo.png" width="60" style="align-self:center">
-    <h2 id="formTitle" style="text-align:center">NEXUS — Logowanie</h2>
-    <input type="email" id="email" placeholder="E-mail" required>
-    <input type="password" id="password" placeholder="Hasło (min. 6 znaków)" required minlength="6">
+    <img class="logo-img" src="/akatsuki_logo.png" alt="Akatsuki Logo">
+    <h2 id="formTitle">NEXUS — Logowanie</h2>
+    <input type="email" id="email" placeholder="E-mail" autocomplete="email" inputmode="email" required>
+    <input type="password" id="password" placeholder="Hasło (min. 6 znaków)" autocomplete="current-password" required minlength="6">
     <div id="err"></div>
     <div id="msg"></div>
     <button type="submit" id="submitBtn">Zaloguj</button>
