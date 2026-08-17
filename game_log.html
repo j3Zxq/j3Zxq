@@ -808,7 +808,7 @@ function gameRow(g){
   const nc=nth===2?'nth-2':nth===3?'nth-3':nth>3?'nth-n':'';
   return`<div class="game-row ${nc}" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 92px auto" onclick="showPreview(event,'${g.id}')">
     <div>
-      <div class="game-title">${g.title} ${steamBadge(g.steam||'')}</div>
+      <div class="game-title">${g.title}</div>
       ${g.note?`<div style="font-size:0.7em;color:var(--muted);margin-top:1px">${g.note}</div>`:''}
     </div>
     <div class="game-cell"><span class="gtag">${g.genre||'—'}</span></div>
