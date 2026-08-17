@@ -54,14 +54,15 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .game-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 56px auto;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background 0.15s;cursor:pointer;}
 .game-row:hover{background:rgba(179,0,0,0.04);}
 .game-row:last-child{border-bottom:none;}
-.game-row.nth-2{border-left:3px solid var(--accent);background:rgba(179,0,0,0.04);}
-.game-row.nth-2 .game-title::before{content:'↩2 ';font-size:0.72em;color:var(--accent);font-family:'Orbitron',monospace;font-weight:700;}
-.game-row.nth-3{border-left:3px solid var(--gold);background:rgba(244,197,80,0.04);}
-.game-row.nth-3 .game-title::before{content:'↩3 ';font-size:0.72em;color:var(--gold);font-family:'Orbitron',monospace;font-weight:700;}
-.game-row.nth-n{border-left:3px solid var(--gold);background:rgba(244,197,80,0.04);}
-.game-row.nth-n .game-title::before{content:'↩+ ';font-size:0.72em;color:var(--gold);font-family:'Orbitron',monospace;font-weight:700;}
-.game-row.has-plat{box-shadow:0 0 16px rgba(176,199,212,0.45),inset 0 0 24px rgba(176,199,212,0.08);border-color:rgba(176,199,212,0.35);}
-.game-row.has-plat:hover{box-shadow:0 0 22px rgba(176,199,212,0.6),inset 0 0 28px rgba(176,199,212,0.1);}
+.game-row.nth-2{border-left:3px solid var(--accent);}
+.game-row.nth-2:hover{background:rgba(179,0,0,0.04);}
+.game-row.nth-3{border-left:3px solid var(--gold);}
+.game-row.nth-3:hover{background:rgba(244,197,80,0.04);}
+.game-row.nth-n{border-left:3px solid var(--gold);}
+.game-row.nth-n:hover{background:rgba(244,197,80,0.04);}
+.replay-badge{display:inline-flex;align-items:center;font-family:'Orbitron',monospace;font-size:0.62em;font-weight:700;letter-spacing:0.5px;margin-left:4px;}
+.replay-badge.r2{color:var(--accent);}
+.replay-badge.r3plus{color:var(--gold);}
 .plat-badge{display:inline-flex;align-items:center;font-size:0.62em;letter-spacing:1.5px;padding:2px 6px;border:1px solid rgba(176,199,212,0.8);color:#b0c7d4;background:rgba(176,199,212,0.14);text-shadow:0 0 8px rgba(176,199,212,0.8);box-shadow:0 0 6px rgba(176,199,212,0.3);}.game-title{font-size:0.9em;font-weight:500;}
 .game-cell{font-size:0.78em;color:var(--muted);}
 .game-cell.mono{font-family:'Orbitron',monospace;font-size:0.7em;}
@@ -798,7 +799,7 @@ function steamBadge(s){
 function gameRow(g){
   const pc=pClass(g.platform),mins=parseTime(g.time),nth=nthPlay(g);
   const nc=nth===2?'nth-2':nth===3?'nth-3':nth>3?'nth-n':'';
-  return`<div class="game-row ${nc}${g.platinum?' has-plat':''}" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 56px auto" onclick="showPreview(event,'${g.id}')">
+  return`<div class="game-row ${nc}" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 56px auto" onclick="showPreview(event,'${g.id}')">
     <div>
       <div class="game-title">${g.title} ${steamBadge(g.steam||'')}</div>
       ${g.note?`<div style="font-size:0.7em;color:var(--muted);margin-top:1px">${g.note}</div>`:''}
@@ -807,7 +808,7 @@ function gameRow(g){
     <div class="game-cell"><span class="ptag ${pc}">${g.platform||'—'}</span></div>
     <div class="game-cell mono">${g.release?fmtDate(g.release):'—'}</div>
     <div class="game-cell mono">${mins?fmtMin(mins):g.time||'—'}</div>
-    <div class="game-cell" style="text-align:center">${g.platinum?`<span class="plat-badge"><img src="platinum.png" alt="Platyna" class="icon-plat"></span>`:`<span style="color:var(--muted)">—</span>`}</div>
+    <div class="game-cell" style="text-align:center">${g.platinum?`<span class="plat-badge"><img src="platinum.png" alt="Platyna" class="icon-plat"></span>`:`<span style="color:var(--muted)">—</span>`}${nth>1?`<span class="replay-badge ${nth===2?'r2':'r3plus'}">↩${nth}</span>`:''}</div>
     <div class="game-actions" onclick="event.stopPropagation()">
       ${g.link?`<a class="btn-link" href="${g.link}" target="_blank" title="Otwórz link" onclick="event.stopPropagation()">↗</a>`:''}
       <button class="btn-xs" onclick="deleteGame('${g.id}')">✕</button>
