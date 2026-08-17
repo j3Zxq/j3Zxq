@@ -371,6 +371,15 @@ body::after {
   filter: drop-shadow(0 0 12px rgba(139,0,0,0.3));
 }
 
+.card-icon-img {
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
+  margin-bottom: 20px;
+  display: block;
+  filter: drop-shadow(0 0 12px rgba(139,0,0,0.3));
+}
+
 .card-label {
   font-family: 'Rajdhani', sans-serif;
   font-size: 0.65em;
@@ -574,7 +583,7 @@ body::after {
 const CARDS = [
   {
     href: 'marksman_gauntlet.html',
-    icon: '<img class="header-icon" src="botlane.png" alt="Bot Lane">',
+    icon: 'botlane.png',
     label: 'League of Legends',
     title: 'MARKSMAN\nGAUNTLET',
     desc: 'Challenge dla marksmana — losuj lub wybieraj ADC, śledź W/L, rangi i życia każdej postaci. MVP system.',
@@ -706,7 +715,7 @@ function buildCards(){
         <div class="card-corner tl"></div>
         <div class="card-corner br"></div>
         <div class="card-body">
-          <span class="card-icon">${c.icon}</span>
+          ${/\.(png|jpg|jpeg|svg|webp)$/i.test(c.icon) ? `<img class="card-icon-img" src="${c.icon}" alt="">` : `<span class="card-icon">${c.icon}</span>`}
           <div class="card-label">${c.label}</div>
           <div class="card-title">${c.title.replace('\n','<br>')}</div>
           <div class="card-desc">${c.desc}</div>
