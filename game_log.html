@@ -964,7 +964,7 @@ function renderBacklog(){
 function renderStats(){
   const g=state.games,allM=g.map(x=>parseTime(x.time)).filter(Boolean);
   const totM=allM.reduce((s,m)=>s+m,0),avgM=allM.length?Math.round(totM/allM.length):0;
-  const plats=g.filter(x=>x.platinum).length;
+  const plats=new Set(g.filter(x=>x.platinum).map(x=>x.title.toLowerCase())).size;
   const steamOwned = g.filter(x=>x.steam==='owned').length;
   const steamAvail = g.filter(x=>x.steam==='avail').length;
   const steamNone  = g.filter(x=>!x.steam).length;
