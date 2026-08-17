@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>NEXUS — Logowanie</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#eee}
+    form{display:flex;flex-direction:column;gap:10px;width:280px}
+    input{padding:8px;border-radius:4px;border:1px solid #444;background:#1e1e1e;color:#eee}
+    button{padding:8px;border-radius:4px;border:none;background:#7c3aed;color:#fff;cursor:pointer}
+    #err{color:#f87171;font-size:14px;min-height:18px}
+    #msg{color:#4ade80;font-size:14px;min-height:18px}
+    #toggle{background:none;color:#a78bfa;text-decoration:underline;padding:4px}
+  </style>
+</head>
+<body>
+  <form id="authForm">
+    <img src="/akatsuki_logo.png" width="60" style="align-self:center">
+    <h2 id="formTitle" style="text-align:center">NEXUS — Logowanie</h2>
+    <input type="email" id="email" placeholder="E-mail" required>
+    <input type="password" id="password" placeholder="Hasło (min. 6 znaków)" required minlength="6">
+    <div id="err"></div>
+    <div id="msg"></div>
+    <button type="submit" id="submitBtn">Zaloguj</button>
+    <button type="button" id="toggle">Nie masz konta? Zarejestruj się</button>
+  </form>
+
+  <script>
+    const supabaseClient = supabase.createClient(
+      'https://TWOJ-PROJEKT.supabase.co',
+      'TWOJ-ANON-KEY'
+    );
+
+    let mode = 'login'; // 'login' | 'signup'
+
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) location.href = '/index.html';
+    });
+
+    document.getElementById('toggle').addEventListener('click', () => {
+      mode = mode === 'login' ? 'signup' : 'login';
+      document.getElementById('formTitle').textContent = mode === 'login' ? 'NEXUS — Logowanie' : 'NEXUS — Rejestracja';
+      document.getElementById('submitBtn').textContent = mode === 'login' ? 'Zaloguj' : 'Zarejestruj';
+      document.getElementById('toggle').textContent = mode === 'login' ? 'Nie masz konta? Zarejestruj się' : 'Masz już konto? Zaloguj się';
+      document.getElementById('err').textContent = '';
+      document.getElementById('msg').textContent = '';
+    });
+
+    document.getElementById('authForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errBox = document.getElementById('err');
+      const msgBox = document.getElementById('msg');
+      errBox.textContent = '';
+      msgBox.textContent = '';
+
+      if (mode === 'login') {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) { errBox.textContent = 'Błędny e-mail lub hasło.'; return; }
+        const params = new URLSearchParams(location.search);
+        location.href = params.get('redirect') || '/index.html';
+      } else {
+        const { error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) { errBox.textContent = error.message; return; }
+        msgBox.textContent = 'Konto utworzone! Sprawdź e-mail, aby potwierdzić rejestrację, a potem się zaloguj.';
+      }
+    });
+  </script>
+</body>
+</html>

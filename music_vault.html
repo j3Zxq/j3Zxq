@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+  requireAuth(); // blokuje render, jeśli brak sesji
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MUSIC VAULT</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0c0c0e;
+  --bg2:     #111115;
+  --bg3:     #16161c;
+  --border:  rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text:    #e8e4de;
+  --muted:   rgba(232,228,222,0.45);
+  --accent:  #e8c87a;
+  --accent2: #b8965a;
+  --red:     #e05555;
+  --green:   #5ec97a;
+  --blue:    #5b9bd5;
+  --purple:  #9b6dd6;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:2px}
+
+/* ── TOP NAV ── */
+.topnav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  height:56px;
+  background:rgba(12,12,14,0.95);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:200;
+  backdrop-filter:blur(12px);
+}
+.topnav-left{display:flex;align-items:center;gap:20px;}
+.logo{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.5em;letter-spacing:4px;
+  color:var(--accent);
+  text-decoration:none;
+}
+.logo span{color:var(--muted);font-size:0.7em;letter-spacing:2px;margin-left:6px;}
+
+.tab-nav{display:flex;gap:2px;}
+.tab-btn{
+  padding:6px 16px;
+  background:transparent;
+  border:none;
+  color:var(--muted);
+  font-family:'DM Sans',sans-serif;
+  font-size:0.82em;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:all 0.2s;
+  border-bottom:2px solid transparent;
+}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+.topnav-right{display:flex;gap:8px;}
+.btn-sm{
+  padding:6px 14px;
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--muted);
+  font-family:'DM Sans',sans-serif;
+  font-size:0.78em;letter-spacing:1px;
+  cursor:pointer;transition:all 0.2s;
+  text-transform:uppercase;
+}
+.btn-sm:hover{color:var(--text);border-color:rgba(255,255,255,0.3);}
+.btn-primary{
+  background:var(--accent);color:#0c0c0e;
+  border-color:var(--accent);font-weight:600;
+}
+.btn-primary:hover{background:var(--accent2);border-color:var(--accent2);color:#0c0c0e;}
+
+/* ── VIEWS ── */
+.view{display:none;padding:28px;}
+.view.active{display:block;}
+
+/* ── GENRE COLUMNS ── */
+.genre-columns{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
+  gap:20px;
+  align-items:start;
+}
+
+.genre-col{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+
+.genre-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+}
+.genre-header-left{display:flex;align-items:center;gap:10px;}
+.genre-dot{width:10px;height:10px;border-radius:50%;}
+.genre-name{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.1em;letter-spacing:3px;
+  color:var(--text);
+}
+.genre-avg{
+  font-size:0.78em;font-weight:600;
+  padding:2px 8px;
+  background:rgba(255,255,255,0.06);
+  border-radius:2px;
+}
+.genre-actions{display:flex;gap:6px;}
+.btn-icon{
+  width:28px;height:28px;
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--muted);
+  cursor:pointer;font-size:0.85em;
+  transition:all 0.18s;display:flex;align-items:center;justify-content:center;
+}
+.btn-icon:hover{border-color:var(--border2);color:var(--text);}
+
+/* sections */
+.genre-section-label{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 18px 6px;
+  font-size:0.68em;letter-spacing:3px;color:var(--muted);
+  text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,0.02);
+}
+.section-count{
+  background:rgba(255,255,255,0.07);
+  padding:1px 7px;border-radius:10px;
+  font-size:0.9em;
+}
+
+/* artist rows */
+.artist-list{padding:4px 0;}
+.artist-row{
+  padding:10px 18px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  transition:background 0.15s;
+}
+.artist-row:hover{background:rgba(255,255,255,0.03);}
+.artist-row:last-child{border-bottom:none;}
+.artist-row.expected{
+  border-left:3px solid #6da8d4;
+  box-shadow:0 0 10px rgba(109,168,212,0.15),inset 0 0 16px rgba(109,168,212,0.04);
+}
+.expected-dot{
+  display:inline-block;
+  width:7px;height:7px;border-radius:50%;
+  background:#6da8d4;
+  margin-left:6px;
+  vertical-align:middle;
+  box-shadow:0 0 5px rgba(109,168,212,0.6);
+}
+
+.artist-row-header{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:4px;
+}
+.artist-name{font-size:0.92em;font-weight:500;}
+.artist-score{
+  margin-left:auto;
+  font-size:0.82em;font-weight:700;
+  white-space:nowrap;
+}
+.score-bar-wrap{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;}
+.score-bar{height:100%;border-radius:2px;transition:width 0.5s ease;}
+.artist-meta{font-size:0.72em;color:var(--muted);margin-top:3px;}
+
+.pending-badge{
+  font-size:0.62em;letter-spacing:1px;
+  padding:2px 6px;border:1px solid rgba(255,255,255,0.15);
+  color:var(--muted);text-transform:uppercase;
+}
+
+/* empty state */
+.empty-state{
+  padding:24px 18px;
+  text-align:center;
+  color:var(--muted);
+  font-size:0.82em;
+  border-bottom:1px solid var(--border);
+}
+
+/* ── ARCHIVE TOGGLE ── */
+.archive-toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 18px;
+  font-size:0.72em;letter-spacing:2px;color:var(--muted);
+  text-transform:uppercase;
+  cursor:pointer;
+  background:rgba(255,255,255,0.015);
+  border-top:1px solid var(--border);
+  transition:color 0.2s;
+}
+.archive-toggle:hover{color:var(--text);}
+.archive-section{display:none;}
+.archive-section.open{display:block;}
+
+/* ── TOP VIEW ── */
+.top-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+  gap:20px;
+}
+.top-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+.top-card-header{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.top-card-title{font-family:'Bebas Neue',sans-serif;font-size:1.1em;letter-spacing:3px;}
+.top-list{padding:8px 0;}
+.top-item{
+  display:flex;align-items:center;gap:12px;
+  padding:8px 18px;
+  border-bottom:1px solid var(--border);
+}
+.top-item:last-child{border-bottom:none;}
+.top-pos{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.3em;color:var(--muted);
+  width:28px;text-align:center;flex-shrink:0;
+}
+.top-pos.gold{color:#e8c87a;}
+.top-pos.silver{color:#b0b8c0;}
+.top-pos.bronze{color:#c4845a;}
+.top-info{flex:1;min-width:0;}
+.top-name{font-size:0.88em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top-albums{font-size:0.72em;color:var(--muted);}
+.top-score{font-size:0.9em;font-weight:700;}
+
+/* ── STATS VIEW ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);
+  padding:18px 20px;
+}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:2.4em;letter-spacing:2px;color:var(--accent);}
+.stat-label{font-size:0.72em;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:4px;}
+.genre-breakdown{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;
+}
+.breakdown-card{background:var(--bg2);border:1px solid var(--border);padding:18px 20px;}
+.breakdown-title{font-size:0.72em;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;}
+.breakdown-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.breakdown-name{font-size:0.85em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.breakdown-bar-w{flex:2;height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;}
+.breakdown-bar{height:100%;border-radius:2px;}
+.breakdown-score{font-size:0.82em;font-weight:700;width:42px;text-align:right;}
+
+/* ── MODALS ── */
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.88);
+  z-index:800;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.25s;
+}
+.overlay.open{opacity:1;pointer-events:all;}
+
+.modal{
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  width:96%;max-width:560px;
+  max-height:90vh;
+  display:flex;flex-direction:column;
+  animation:modalIn 0.25s ease;
+}
+@keyframes modalIn{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:1.1em;letter-spacing:3px;color:var(--accent);}
+.modal-close{
+  background:transparent;border:none;
+  color:var(--muted);font-size:1.2em;
+  cursor:pointer;transition:color 0.2s;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+}
+.modal-close:hover{color:var(--text);}
+
+.modal-body{padding:20px;overflow-y:auto;flex:1;}
+.modal-footer{
+  padding:14px 20px;
+  border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:10px;
+  flex-shrink:0;
+}
+
+/* form */
+.form-group{margin-bottom:16px;}
+.form-label{
+  display:block;font-size:0.72em;letter-spacing:2px;
+  color:var(--muted);text-transform:uppercase;
+  margin-bottom:6px;
+}
+.form-input,.form-select{
+  width:100%;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border2);
+  color:var(--text);
+  padding:9px 12px;
+  font-family:'DM Sans',sans-serif;
+  font-size:0.9em;
+  outline:none;
+  transition:border-color 0.2s;
+}
+.form-input:focus,.form-select:focus{border-color:var(--accent);}
+.form-input::placeholder{color:var(--muted);}
+.form-select option{background:var(--bg2);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-hint{font-size:0.72em;color:var(--muted);margin-top:5px;}
+
+/* search results */
+.search-results{
+  margin-top:8px;
+  border:1px solid var(--border);
+  max-height:200px;overflow-y:auto;
+  display:none;
+}
+.search-results.show{display:block;}
+.search-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;
+  cursor:pointer;
+  transition:background 0.15s;
+  border-bottom:1px solid var(--border);
+  font-size:0.85em;
+}
+.search-item:last-child{border-bottom:none;}
+.search-item:hover{background:rgba(255,255,255,0.05);}
+.search-item img{width:32px;height:32px;object-fit:cover;flex-shrink:0;background:var(--bg3);}
+.search-item-info{}
+.search-item-name{font-weight:500;}
+.search-item-sub{font-size:0.78em;color:var(--muted);}
+.search-loading{padding:12px;text-align:center;color:var(--muted);font-size:0.82em;}
+
+/* artist detail modal */
+.modal-lg{max-width:720px;}
+.album-list{display:flex;flex-direction:column;gap:8px;}
+.album-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);
+}
+.album-cover{
+  width:48px;height:48px;
+  object-fit:cover;
+  background:var(--bg3);
+  flex-shrink:0;
+}
+.album-info{flex:1;min-width:0;}
+.album-name{font-size:0.88em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.album-year{font-size:0.72em;color:var(--muted);}
+.album-score-display{
+  font-size:0.85em;font-weight:700;
+  white-space:nowrap;
+}
+.album-score-display.unrated{color:var(--muted);font-weight:400;}
+.album-actions{display:flex;gap:6px;}
+.btn-rate{
+  padding:4px 10px;
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--muted);
+  font-size:0.72em;letter-spacing:1px;
+  cursor:pointer;transition:all 0.18s;
+  text-transform:uppercase;font-family:'DM Sans',sans-serif;
+}
+.btn-rate:hover{border-color:var(--accent);color:var(--accent);}
+
+/* rate album inline */
+.rate-inline{
+  display:none;
+  padding:8px 12px;
+  background:rgba(232,200,122,0.05);
+  border:1px solid rgba(232,200,122,0.2);
+  margin-top:4px;
+  flex-direction:column;gap:8px;
+}
+.rate-inline.open{display:flex;}
+.rate-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.rate-label{font-size:0.72em;letter-spacing:1px;color:var(--muted);white-space:nowrap;}
+.rate-input-sm{
+  width:70px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid var(--border2);
+  color:var(--text);
+  padding:5px 8px;
+  font-family:'DM Sans',sans-serif;
+  font-size:0.85em;outline:none;
+}
+.rate-input-sm:focus{border-color:var(--accent);}
+.rate-preview{font-size:0.82em;color:var(--accent);font-weight:600;}
+.btn-save-rate{
+  padding:5px 12px;background:var(--accent);
+  border:none;color:#0c0c0e;
+  font-family:'DM Sans',sans-serif;
+  font-size:0.75em;font-weight:600;
+  letter-spacing:1px;cursor:pointer;transition:background 0.2s;
+}
+.btn-save-rate:hover{background:var(--accent2);}
+
+.artist-row.incomplete {
+  border-left: 3px solid var(--accent);
+  background: rgba(232,200,122,0.04);
+}
+.artist-row.incomplete:hover { background: rgba(232,200,122,0.08); }
+.incomplete-badge {
+  font-size:0.62em;letter-spacing:1px;
+  padding:2px 6px;border:1px solid var(--accent);
+  color:var(--accent);text-transform:uppercase;
+  animation: incPulse 2.5s ease-in-out infinite;
+}
+@keyframes incPulse {
+  0%,100%{opacity:1} 50%{opacity:0.45}
+}
+
+/* pending section toggle same style as archive */
+.pending-toggle {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 18px;
+  font-size:0.72em;letter-spacing:2px;color:var(--muted);
+  text-transform:uppercase;
+  cursor:pointer;
+  background:rgba(255,255,255,0.015);
+  border-top:1px solid var(--border);
+  transition:color 0.2s;
+}
+.pending-toggle:hover{color:var(--text);}
+.pending-section{display:none;}
+.pending-section.open{display:block;}
+
+.add-genre-btn{
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;
+  padding:14px;
+  background:transparent;
+  border:1px dashed var(--border2);
+  color:var(--muted);
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  font-size:0.8em;letter-spacing:2px;
+  text-transform:uppercase;
+  width:100%;
+  transition:all 0.2s;
+  margin-top:4px;
+}
+.add-genre-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* toast */
+.toast{
+  position:fixed;bottom:20px;right:20px;
+  background:var(--bg2);border:1px solid var(--border2);
+  padding:10px 18px;font-size:0.82em;letter-spacing:0.5px;
+  z-index:9999;
+  transform:translateY(60px);opacity:0;
+  transition:all 0.28s cubic-bezier(.4,0,.2,1);
+}
+.toast.show{transform:none;opacity:1;}
+
+/* score color helpers */
+.score-high{color:var(--green);}
+.score-mid{color:var(--accent);}
+.score-low{color:var(--red);}
+
+/* responsive */
+@media(max-width:768px){
+  .topnav{padding:0 14px;}
+  .tab-btn{padding:6px 10px;font-size:0.75em;}
+  .view{padding:14px;}
+  .genre-columns,.top-grid,.stats-grid,.genre-breakdown{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-left">
+    <a class="logo" href="hub.html">⚡ NEXUS <span>/ MUSIC VAULT</span></a>
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('library')">📁 Biblioteka</button>
+      <button class="tab-btn" onclick="switchTab('top')">🏆 Rankingi</button>
+      <button class="tab-btn" onclick="switchTab('stats')">📊 Statystyki</button>
+    </div>
+  </div>
+  <div class="topnav-right">
+    <button class="btn-sm" onclick="exportData()">📤 Export</button>
+    <button class="btn-sm" onclick="document.getElementById('fileInput').click()">📥 Import</button>
+    <button class="btn-sm btn-primary" onclick="openAddArtist()">+ Dodaj Artystę</button>
+    <input type="file" id="fileInput" accept=".json" onchange="importData(event)" style="display:none">
+  </div>
+</nav>
+
+<!-- LIBRARY VIEW -->
+<div class="view active" id="view-library">
+  <div class="genre-columns" id="genre-columns"></div>
+  <button class="add-genre-btn" onclick="openAddGenre()">＋ Dodaj gatunek</button>
+</div>
+
+<!-- TOP VIEW -->
+<div class="view" id="view-top">
+  <div class="top-grid" id="top-grid"></div>
+</div>
+
+<!-- STATS VIEW -->
+<div class="view" id="view-stats">
+  <div class="stats-grid" id="stats-grid"></div>
+  <div class="genre-breakdown" id="genre-breakdown"></div>
+</div>
+
+<!-- ── MODALS ── -->
+
+<!-- ADD ARTIST -->
+<div class="overlay" id="overlay-artist">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">DODAJ ARTYSTĘ</div>
+      <button class="modal-close" onclick="closeModal('overlay-artist')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Gatunek</label>
+        <select class="form-select" id="artist-genre-select"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nazwa artysty / zespołu</label>
+        <input class="form-input" id="artist-search-input" placeholder="np. Kendrick Lamar, Metallica…" autocomplete="off">
+        <div class="search-results" id="artist-search-results"></div>
+        <div class="form-hint">Wpisz nazwę — skrypt przeszuka MusicBrainz i zaproponuje dyskografię automatycznie.</div>
+        <button type="button" style="margin-top:8px;padding:4px 10px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:0.72em;letter-spacing:1px;cursor:pointer;transition:all 0.2s" onclick="toggleManualMode()" id="manual-mode-btn">✏ Nie ma w bazie? Dodaj ręcznie</button>
+      </div>
+
+      <!-- MANUAL MODE -->
+      <div id="manual-mode-fields" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Nazwa artysty (ręcznie)</label>
+          <input class="form-input" id="manual-artist-name" placeholder="np. Peja, Ten Typ Mes…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Albumy (każdy w nowej linii, opcjonalnie rok po przecinku)</label>
+          <textarea id="manual-albums" rows="6" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text);padding:8px 11px;font-family:'DM Sans',sans-serif;font-size:0.85em;outline:none;resize:vertical;min-height:120px;" placeholder="Słoma w butach, 2003&#10;Krew na betonie, 2006&#10;Brutalna Rzeczywistość, 2010"></textarea>
+          <div class="form-hint">Możesz wpisać sam tytuł albo "Tytuł, rok"</div>
+        </div>
+      </div>
+      <div class="form-group" id="selected-artist-preview" style="display:none">
+        <label class="form-label">Wybrany artysta</label>
+        <div id="selected-artist-name" style="font-weight:600;color:var(--accent);padding:8px 0;"></div>
+        <div id="selected-albums-preview" style="font-size:0.8em;color:var(--muted);"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="artist-status-select">
+          <option value="active">Aktywny (w trakcie oceniania)</option>
+          <option value="pending">Do przesłuchania</option>
+          <option value="archive">Archiwum (przesłuchany)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('overlay-artist')">Anuluj</button>
+      <button class="btn-sm btn-primary" onclick="confirmAddArtist()">Dodaj Artystę</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD GENRE -->
+<div class="overlay" id="overlay-genre">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">NOWY GATUNEK</div>
+      <button class="modal-close" onclick="closeModal('overlay-genre')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nazwa gatunku</label>
+        <input class="form-input" id="genre-name-input" placeholder="np. Jazz, R&B, Punk…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Kolor</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="color-picker">
+          <div class="color-swatch" data-color="#e8c87a" style="width:28px;height:28px;background:#e8c87a;cursor:pointer;border:2px solid transparent;transition:all 0.15s" onclick="selectColor(this)"></div>
+          <div class="color-swatch" data-color="#5b9bd5" style="width:28px;height:28px;background:#5b9bd5;cursor:pointer;border:2px solid transparent;transition:all 0.15s" onclick="selectColor(this)"></div>
+          <div class="color-swatch" data-color="#9b6dd6" style="width:28px;height:28px;background:#9b6dd6;cursor:pointer;border:2px solid transparent;transition:all 0.15s" onclick="selectColor(this)"></div>
+          <div class="color-swatch" data-color="#5ec97a" style="width:28px;height:28px;background:#5ec97a;cursor:pointer;border:2px solid transparent;transition:all 0.15s" onclick="selectColor(this)"></div>
+          <div class="color-swatch" data-color="#e05555" style="width:28px;height:28px;background:#e05555;cursor:pointer;border:2px solid transparent;transition:all 0.15s" onclick="selectColor(this)"></div>
+          <div class="color-swatch" data-color="#e8845a" style="width:28px;height:28px;background:#e8845a;cursor:pointer;border:2px solid transparent;transition:all 0.15s" onclick="selectColor(this)"></div>
+          <div class="color-swatch" data-color="#5accc8" style="width:28px;height:28px;background:#5accc8;cursor:pointer;border:2px solid transparent;transition:all 0.15s" onclick="selectColor(this)"></div>
+          <div class="color-swatch" data-color="#d4608a" style="width:28px;height:28px;background:#d4608a;cursor:pointer;border:2px solid transparent;transition:all 0.15s" onclick="selectColor(this)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('overlay-genre')">Anuluj</button>
+      <button class="btn-sm btn-primary" onclick="confirmAddGenre()">Dodaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARTIST DETAIL -->
+<div class="overlay" id="overlay-detail">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="detail-artist-name"></div>
+        <div style="font-size:0.75em;color:var(--muted);margin-top:2px;" id="detail-artist-meta"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;border:1px solid var(--border);transition:all 0.2s;" id="expected-label" onclick="toggleExpected()">
+          <input type="checkbox" id="detail-expected" style="accent-color:#6da8d4;cursor:pointer;">
+          <span style="font-size:0.72em;letter-spacing:1px;color:var(--muted)" id="expected-label-text">Spodziewana płyta</span>
+        </label>
+        <button class="btn-sm" id="detail-archive-btn" onclick="toggleArchiveArtist()"></button>
+        <button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.3)" onclick="deleteArtist()">🗑 Usuń</button>
+        <button class="modal-close" onclick="closeModal('overlay-detail')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="detail-albums-list"></div>
+      <div style="margin-top:14px;">
+        <button class="btn-sm" onclick="openAddAlbum()">＋ Dodaj album ręcznie</button>
+        <button class="btn-sm" style="margin-left:8px" onclick="refreshArtistAlbums()">↻ Odśwież z internetu</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div id="detail-avg" style="font-size:0.88em;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ALBUM MANUAL -->
+<div class="overlay" id="overlay-album">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">DODAJ ALBUM</div>
+      <button class="modal-close" onclick="closeModal('overlay-album')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tytuł albumu</label>
+        <input class="form-input" id="album-title-input" placeholder="np. To Pimp a Butterfly">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Rok</label>
+          <input class="form-input" id="album-year-input" placeholder="2015" type="number" min="1900" max="2099">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Liczba tracków</label>
+          <input class="form-input" id="album-tracks-input" placeholder="16" type="number" min="1">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('overlay-album')">Anuluj</button>
+      <button class="btn-sm btn-primary" onclick="confirmAddAlbum()">Dodaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const STORAGE_KEY = 'music_vault_v1';
+
+// genres: [{id, name, color}]
+// artists: [{id, name, genreId, status:'active'|'archive', mbid, albums:[{id,title,year,tracks,liked}]}]
+let state = {
+  genres: [
+    { id: 'g1', name: 'Polski Rap', color: '#5b9bd5' },
+    { id: 'g2', name: 'Amerykański Rap', color: '#e8c87a' },
+    { id: 'g3', name: 'Metal', color: '#e05555' }
+  ],
+  artists: []
+};
+
+let selectedGenreColor = '#e8c87a';
+let selectedArtistData = null; // from musicbrainz search
+let detailArtistId = null;
+let rateAlbumOpenId = null;
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.genres)) state.genres = parsed.genres;
+        if (Array.isArray(parsed.artists)) state.artists = parsed.artists;
+      }
+    } catch(e) {}
+  }
+}
+
+// ══════════════════════════════════════════════
+// SCORE HELPERS
+// ══════════════════════════════════════════════
+function albumScore(album) {
+  if (!album.tracks || album.liked == null) return null;
+  return Math.round((album.liked / album.tracks) * 100);
+}
+
+function artistScore(artist) {
+  const rated = artist.albums.filter(a => albumScore(a) !== null);
+  if (!rated.length) return null;
+  return Math.round(rated.reduce((s, a) => s + albumScore(a), 0) / rated.length);
+}
+
+function scoreColor(s) {
+  if (s === null) return 'var(--muted)';
+  if (s >= 70) return 'var(--green)';
+  if (s >= 40) return 'var(--accent)';
+  return 'var(--red)';
+}
+
+function scoreClass(s) {
+  if (s === null) return '';
+  if (s >= 70) return 'score-high';
+  if (s >= 40) return 'score-mid';
+  return 'score-low';
+}
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+function renderAll() {
+  renderLibrary();
+  renderTop();
+  renderStats();
+}
+
+function renderLibrary() {
+  const col = document.getElementById('genre-columns');
+  col.innerHTML = '';
+  state.genres.forEach(g => {
+    const byName = (a, b) => a.name.localeCompare(b.name, 'pl');
+    const active  = state.artists.filter(a => a.genreId === g.id && a.status === 'active').sort(byName);
+    const archive = state.artists.filter(a => a.genreId === g.id && a.status === 'archive').sort(byName);
+    const pending = state.artists.filter(a => a.genreId === g.id && a.status === 'pending').sort(byName);
+    const allScored = state.artists.filter(a => a.genreId === g.id && artistScore(a) !== null);
+    const avgScore = allScored.length
+      ? Math.round(allScored.reduce((s,a) => s + artistScore(a), 0) / allScored.length)
+      : null;
+
+    const div = document.createElement('div');
+    div.className = 'genre-col';
+    div.innerHTML = `
+      <div class="genre-header">
+        <div class="genre-header-left">
+          <div class="genre-dot" style="background:${g.color}"></div>
+          <div class="genre-name">${g.name}</div>
+          ${avgScore !== null ? `<div class="genre-avg ${scoreClass(avgScore)}">${avgScore}%</div>` : ''}
+        </div>
+        <div class="genre-actions">
+          <button class="btn-icon" title="Dodaj artystę" onclick="openAddArtistInGenre('${g.id}')">＋</button>
+          <button class="btn-icon" title="Usuń gatunek" onclick="deleteGenre('${g.id}')">✕</button>
+        </div>
+      </div>
+
+      <div class="genre-section-label">
+        Aktywni
+        <span class="section-count">${active.length}</span>
+      </div>
+      <div class="artist-list" id="active-list-${g.id}">
+        ${active.length ? active.map(a => artistRowHTML(a)).join('') : `<div class="empty-state">Brak aktywnych artystów</div>`}
+      </div>
+
+      <div class="pending-toggle" onclick="togglePendingSection('${g.id}')">
+        <span>🕐 Do przesłuchania (${pending.length})</span>
+        <span id="pending-chevron-${g.id}">▾</span>
+      </div>
+      <div class="pending-section" id="pending-section-${g.id}">
+        <div class="genre-section-label">
+          Do przesłuchania
+          <span class="section-count">${pending.length}</span>
+        </div>
+        <div class="artist-list">
+          ${pending.length ? pending.map(a => artistRowHTML(a)).join('') : `<div class="empty-state">Brak artystów do przesłuchania</div>`}
+        </div>
+      </div>
+
+      <div class="archive-toggle" onclick="toggleArchiveSection('${g.id}')">
+        <span>📦 Archiwum (${archive.length})</span>
+        <span id="archive-chevron-${g.id}">▾</span>
+      </div>
+      <div class="archive-section" id="archive-section-${g.id}">
+        <div class="genre-section-label">
+          Przesłuchani
+          <span class="section-count">${archive.length}</span>
+        </div>
+        <div class="artist-list">
+          ${archive.length ? archive.map(a => artistRowHTML(a)).join('') : `<div class="empty-state">Brak zarchiwizowanych</div>`}
+        </div>
+      </div>
+    `;
+    col.appendChild(div);
+  });
+}
+
+function artistRowHTML(artist) {
+  const score = artistScore(artist);
+  const totalAlbums = artist.albums.length;
+  const ratedAlbums = artist.albums.filter(a => albumScore(a) !== null).length;
+  const unratedCount = totalAlbums - ratedAlbums;
+  const isIncomplete = totalAlbums > 0 && unratedCount > 0;
+  const col = scoreColor(score);
+  const barW = score !== null ? score : 0;
+  return `
+    <div class="artist-row${isIncomplete ? ' incomplete' : ''}${artist.expected ? ' expected' : ''}" onclick="openDetail('${artist.id}')">
+      <div class="artist-row-header">
+        <span class="artist-name">${artist.name}${artist.expected ? '<span class="expected-dot" title="Spodziewana płyta"></span>' : ''}</span>
+        ${isIncomplete
+          ? `<span class="incomplete-badge">${unratedCount} nieocen.</span>`
+          : score !== null
+            ? `<span class="artist-score" style="color:${col}">${score}%</span>`
+            : `<span class="pending-badge">nieoceniony</span>`
+        }
+      </div>
+      <div class="score-bar-wrap">
+        <div class="score-bar" style="width:${barW}%;background:${col}"></div>
+      </div>
+      <div class="artist-meta">${totalAlbums} albumów · ${ratedAlbums} ocenionych${isIncomplete ? ` · <span style="color:var(--accent)">brakuje ${unratedCount}!</span>` : ''}</div>
+    </div>
+  `;
+}
+
+function renderTop() {
+  const grid = document.getElementById('top-grid');
+  grid.innerHTML = '';
+  state.genres.forEach(g => {
+    const artists = state.artists
+      .filter(a => a.genreId === g.id && artistScore(a) !== null)
+      .sort((a, b) => artistScore(b) - artistScore(a));
+
+    const card = document.createElement('div');
+    card.className = 'top-card';
+    card.innerHTML = `
+      <div class="top-card-header">
+        <div class="genre-dot" style="background:${g.color}"></div>
+        <div class="top-card-title">${g.name}</div>
+      </div>
+      <div class="top-list">
+        ${artists.length === 0
+          ? `<div class="empty-state">Brak ocenionych artystów</div>`
+          : artists.map((a, i) => {
+              const sc = artistScore(a);
+              const posClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+              return `
+                <div class="top-item" onclick="openDetail('${a.id}')" style="cursor:pointer">
+                  <div class="top-pos ${posClass}">${i+1}</div>
+                  <div class="top-info">
+                    <div class="top-name">${a.name}</div>
+                    <div class="top-albums">${a.albums.filter(x=>albumScore(x)!==null).length} ocenionych albumów</div>
+                  </div>
+                  <div class="top-score ${scoreClass(sc)}">${sc}%</div>
+                </div>
+              `;
+            }).join('')
+        }
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderStats() {
+  const allArtists = state.artists;
+  const totalAlbums = allArtists.reduce((s,a)=>s+a.albums.length, 0);
+  const ratedAlbums = allArtists.reduce((s,a)=>s+a.albums.filter(x=>albumScore(x)!==null).length, 0);
+  const scoredArtists = allArtists.filter(a=>artistScore(a)!==null);
+  const globalAvg = scoredArtists.length
+    ? Math.round(scoredArtists.reduce((s,a)=>s+artistScore(a),0)/scoredArtists.length)
+    : null;
+
+  const sg = document.getElementById('stats-grid');
+  sg.innerHTML = `
+    <div class="stat-card"><div class="stat-val">${allArtists.length}</div><div class="stat-label">Artyści łącznie</div></div>
+    <div class="stat-card"><div class="stat-val">${totalAlbums}</div><div class="stat-label">Albumy łącznie</div></div>
+    <div class="stat-card"><div class="stat-val">${ratedAlbums}</div><div class="stat-label">Ocenione albumy</div></div>
+    <div class="stat-card"><div class="stat-val ${scoreClass(globalAvg)}">${globalAvg !== null ? globalAvg+'%' : '—'}</div><div class="stat-label">Średnia globalna</div></div>
+  `;
+
+  const bd = document.getElementById('genre-breakdown');
+  bd.innerHTML = '';
+  state.genres.forEach(g => {
+    const artists = state.artists.filter(a => a.genreId === g.id && artistScore(a) !== null)
+      .sort((a,b) => artistScore(b)-artistScore(a))
+      .slice(0, 8);
+
+    const card = document.createElement('div');
+    card.className = 'breakdown-card';
+    card.innerHTML = `
+      <div class="breakdown-title">${g.name}</div>
+      ${artists.length === 0
+        ? `<div style="color:var(--muted);font-size:0.8em">Brak danych</div>`
+        : artists.map(a => {
+            const sc = artistScore(a);
+            return `
+              <div class="breakdown-row">
+                <div class="breakdown-name">${a.name}</div>
+                <div class="breakdown-bar-w">
+                  <div class="breakdown-bar" style="width:${sc}%;background:${scoreColor(sc)}"></div>
+                </div>
+                <div class="breakdown-score ${scoreClass(sc)}">${sc}%</div>
+              </div>
+            `;
+          }).join('')
+      }
+    `;
+    bd.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  renderAll();
+}
+
+// ══════════════════════════════════════════════
+// GENRE
+// ══════════════════════════════════════════════
+function openAddGenre() {
+  document.getElementById('genre-name-input').value = '';
+  selectedGenreColor = '#e8c87a';
+  document.querySelectorAll('.color-swatch').forEach(s=>s.style.borderColor='transparent');
+  document.querySelector('.color-swatch[data-color="#e8c87a"]').style.borderColor='white';
+  openModal('overlay-genre');
+}
+
+function selectColor(el) {
+  document.querySelectorAll('.color-swatch').forEach(s=>s.style.borderColor='transparent');
+  el.style.borderColor = 'white';
+  selectedGenreColor = el.dataset.color;
+}
+
+function confirmAddGenre() {
+  const name = document.getElementById('genre-name-input').value.trim();
+  if (!name) { showToast('⚠ Wpisz nazwę gatunku'); return; }
+  state.genres.push({ id: 'g'+Date.now(), name, color: selectedGenreColor });
+  saveState(); renderAll();
+  closeModal('overlay-genre');
+  showToast('✓ Gatunek dodany: '+name);
+}
+
+function deleteGenre(id) {
+  const g = state.genres.find(x=>x.id===id);
+  if (!confirm(`Usunąć gatunek "${g?.name}" i wszystkich jego artystów?`)) return;
+  state.genres = state.genres.filter(x=>x.id!==id);
+  state.artists = state.artists.filter(x=>x.genreId!==id);
+  saveState(); renderAll();
+  showToast('Gatunek usunięty');
+}
+
+function toggleArchiveSection(genreId) {
+  const sec = document.getElementById('archive-section-'+genreId);
+  const chev = document.getElementById('archive-chevron-'+genreId);
+  sec.classList.toggle('open');
+  chev.textContent = sec.classList.contains('open') ? '▴' : '▾';
+}
+
+function togglePendingSection(genreId) {
+  const sec = document.getElementById('pending-section-'+genreId);
+  const chev = document.getElementById('pending-chevron-'+genreId);
+  sec.classList.toggle('open');
+  chev.textContent = sec.classList.contains('open') ? '▴' : '▾';
+}
+
+// ══════════════════════════════════════════════
+// ADD ARTIST
+// ══════════════════════════════════════════════
+let manualMode = false;
+
+function toggleManualMode(){
+  manualMode = !manualMode;
+  document.getElementById('manual-mode-fields').style.display = manualMode ? 'block' : 'none';
+  document.getElementById('artist-search-input').parentElement.querySelector('.search-results').classList.remove('show');
+  const btn = document.getElementById('manual-mode-btn');
+  btn.textContent = manualMode ? '← Wróć do wyszukiwania' : '✏ Nie ma w bazie? Dodaj ręcznie';
+  btn.style.color = manualMode ? 'var(--accent)' : 'var(--muted)';
+  btn.style.borderColor = manualMode ? 'var(--accent)' : 'var(--border)';
+  if(manualMode){
+    selectedArtistData = null;
+    document.getElementById('selected-artist-preview').style.display = 'none';
+    setTimeout(()=>document.getElementById('manual-artist-name').focus(), 100);
+  }
+}
+
+function openAddArtist() {
+  selectedArtistData = null;
+  manualMode = false;
+  document.getElementById('artist-search-input').value = '';
+  document.getElementById('artist-search-results').innerHTML = '';
+  document.getElementById('artist-search-results').classList.remove('show');
+  document.getElementById('selected-artist-preview').style.display = 'none';
+  document.getElementById('manual-mode-fields').style.display = 'none';
+  document.getElementById('manual-artist-name').value = '';
+  document.getElementById('manual-albums').value = '';
+  const btn = document.getElementById('manual-mode-btn');
+  btn.textContent = '✏ Nie ma w bazie? Dodaj ręcznie';
+  btn.style.color = 'var(--muted)';
+  btn.style.borderColor = 'var(--border)';
+  const sel = document.getElementById('artist-genre-select');
+  sel.innerHTML = state.genres.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  openModal('overlay-artist');
+}
+
+function openAddArtistInGenre(genreId) {
+  openAddArtist();
+  document.getElementById('artist-genre-select').value = genreId;
+}
+
+let searchTimeout = null;
+
+async function searchMusicBrainz(query) {
+  const res = document.getElementById('artist-search-results');
+  res.innerHTML = '<div class="search-loading">Szukam…</div>';
+  res.classList.add('show');
+  try {
+    const url = `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(query)}&limit=6&fmt=json`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'MusicVault/1.0 (personal)' } });
+    const data = await r.json();
+    const artists = data.artists || [];
+    if (!artists.length) { res.innerHTML = '<div class="search-loading">Brak wyników</div>'; return; }
+
+    res.innerHTML = '';
+    artists.forEach(a => {
+      const item = document.createElement('div');
+      item.className = 'search-item';
+      item.innerHTML = `
+        <div class="search-item-info">
+          <div class="search-item-name">${a.name}</div>
+          <div class="search-item-sub">${[a.type, a['begin-area']?.name||a.country].filter(Boolean).join(' · ')}</div>
+        </div>
+      `;
+      item.addEventListener('click', () => selectArtist(
+        a.id,
+        a.name,
+        a['begin-area']?.name || a.country || '',
+        a.type || ''
+      ));
+      res.appendChild(item);
+    });
+  } catch(e) {
+    res.innerHTML = '<div class="search-loading">Błąd połączenia — spróbuj ponownie</div>';
+  }
+}
+
+async function selectArtist(mbid, name, origin, type) {
+  document.getElementById('artist-search-input').value = name;
+  document.getElementById('artist-search-results').classList.remove('show');
+  document.getElementById('selected-artist-preview').style.display = 'block';
+  document.getElementById('selected-artist-name').textContent = name;
+  document.getElementById('selected-albums-preview').textContent = 'Pobieranie dyskografii…';
+
+  selectedArtistData = { mbid, name, origin, type, albums: [] };
+
+  try {
+    // fetch release groups (albums/EPs only)
+    const url = `https://musicbrainz.org/ws/2/release-group?artist=${mbid}&type=album|ep&limit=100&fmt=json`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'MusicVault/1.0 (personal)' } });
+    const data = await r.json();
+    const groups = (data['release-groups'] || [])
+      .filter(rg => ['Album','EP'].includes(rg['primary-type']))
+      .sort((a,b) => (a['first-release-date']||'').localeCompare(b['first-release-date']||''));
+
+    selectedArtistData.albums = groups.map(rg => ({
+      id: 'al'+Date.now()+Math.random().toString(36).slice(2),
+      title: rg.title,
+      year: (rg['first-release-date']||'').slice(0,4),
+      mbid: rg.id,
+      tracks: null,
+      liked: null,
+      cover: null
+    }));
+    document.getElementById('selected-albums-preview').textContent =
+      `Znaleziono ${selectedArtistData.albums.length} albumów/EP`;
+  } catch(e) {
+    document.getElementById('selected-albums-preview').textContent = 'Nie udało się pobrać dyskografii — zostanie dodany bez albumów';
+    selectedArtistData.albums = [];
+  }
+}
+
+async function confirmAddArtist() {
+  const genreId = document.getElementById('artist-genre-select').value;
+  const status  = document.getElementById('artist-status-select').value;
+
+  if(manualMode){
+    // tryb ręczny
+    const name = document.getElementById('manual-artist-name').value.trim();
+    if(!name){ showToast('⚠ Wpisz nazwę artysty'); return; }
+    const lines = document.getElementById('manual-albums').value.split('\n').map(l=>l.trim()).filter(Boolean);
+    const albums = lines.map(line=>{
+      const parts = line.split(',');
+      const title = parts[0].trim();
+      const year = parts[1] ? parseInt(parts[1].trim()) : null;
+      return { id:'al'+Date.now()+Math.random().toString(36).slice(2), title, year: year||null, mbid:null };
+    });
+    const artist = { id:'a'+Date.now(), name, mbid:null, genreId, status, albums, manual:true };
+    state.artists.push(artist);
+    saveState(); renderAll();
+    closeModal('overlay-artist');
+    showToast(`✓ Dodano ręcznie: ${name} (${albums.length} albumów)`);
+    return;
+  }
+
+  // tryb MusicBrainz
+  if (!selectedArtistData) { showToast('⚠ Wybierz artystę z listy lub dodaj ręcznie'); return; }
+  const artist = {
+    id: 'a'+Date.now(),
+    name: selectedArtistData.name,
+    mbid: selectedArtistData.mbid,
+    genreId,
+    status,
+    albums: selectedArtistData.albums
+  };
+  state.artists.push(artist);
+  saveState(); renderAll();
+  closeModal('overlay-artist');
+  showToast(`✓ Dodano: ${artist.name} (${artist.albums.length} albumów)`);
+  fetchTrackCounts(artist.id);
+  fetchCovers(artist.id);
+}
+
+async function fetchTrackCounts(artistId) {
+  const artist = state.artists.find(a=>a.id===artistId);
+  if (!artist) return;
+  for (const album of artist.albums) {
+    if (album.tracks || !album.mbid) continue;
+    try {
+      await new Promise(r=>setTimeout(r,300)); // rate limit
+      const url = `https://musicbrainz.org/ws/2/release?release-group=${album.mbid}&limit=1&fmt=json`;
+      const r = await fetch(url, { headers:{'User-Agent':'MusicVault/1.0 (personal)'} });
+      const d = await r.json();
+      const rel = d.releases?.[0];
+      if (rel?.['track-count']) {
+        album.tracks = rel['track-count'];
+      } else if (rel?.id) {
+        // fetch full release
+        const r2 = await fetch(`https://musicbrainz.org/ws/2/release/${rel.id}?inc=recordings&fmt=json`,
+          {headers:{'User-Agent':'MusicVault/1.0 (personal)'}});
+        const d2 = await r2.json();
+        const count = d2.media?.reduce((s,m)=>s+(m['track-count']||0),0);
+        if (count) album.tracks = count;
+      }
+    } catch(e) {}
+  }
+  saveState();
+  if (detailArtistId === artistId) renderDetail();
+}
+
+async function fetchCovers(artistId) {
+  const artist = state.artists.find(a=>a.id===artistId);
+  if (!artist) return;
+  for (const album of artist.albums) {
+    if (album.cover || !album.mbid) continue;
+    try {
+      await new Promise(r=>setTimeout(r,200));
+      const url = `https://coverartarchive.org/release-group/${album.mbid}/front-250`;
+      // test if cover exists
+      const r = await fetch(url, {method:'HEAD'});
+      if (r.ok) album.cover = url;
+    } catch(e) {}
+  }
+  saveState();
+  if (detailArtistId === artistId) renderDetail();
+}
+
+// ══════════════════════════════════════════════
+// ARTIST DETAIL
+// ══════════════════════════════════════════════
+function openDetail(artistId) {
+  detailArtistId = artistId;
+  renderDetail();
+  openModal('overlay-detail');
+}
+
+function renderDetail() {
+  const artist = state.artists.find(a=>a.id===detailArtistId);
+  if (!artist) return;
+  const genre = state.genres.find(g=>g.id===artist.genreId);
+  const score = artistScore(artist);
+
+  document.getElementById('detail-artist-name').textContent = artist.name;
+  document.getElementById('detail-artist-meta').textContent =
+    `${genre?.name||''} · ${artist.albums.length} albumów`;
+  document.getElementById('detail-archive-btn').textContent =
+    artist.status === 'active'  ? '🕐 Do przesłuchania' :
+    artist.status === 'pending' ? '📦 Przenieś do archiwum' :
+                                  '↩ Przywróć do aktywnych';
+  document.getElementById('detail-avg').textContent =
+    score !== null ? `Średnia artysty: ${score}%` : 'Brak ocen';
+
+  // expected checkbox
+  const cb = document.getElementById('detail-expected');
+  cb.checked = !!artist.expected;
+  const lbl = document.getElementById('expected-label');
+  lbl.style.borderColor = artist.expected ? '#6da8d4' : 'var(--border)';
+  lbl.style.color = artist.expected ? '#6da8d4' : '';
+  document.getElementById('expected-label-text').style.color = artist.expected ? '#6da8d4' : 'var(--muted)';
+
+  const list = document.getElementById('detail-albums-list');
+  if (!artist.albums.length) {
+    list.innerHTML = '<div class="empty-state">Brak albumów. Dodaj ręcznie lub odśwież z internetu.</div>';
+    return;
+  }
+
+  list.innerHTML = `<div class="album-list">${artist.albums.map(al => {
+    const sc = albumScore(al);
+    const cover = al.cover || `https://coverartarchive.org/release-group/${al.mbid}/front-250`;
+    return `
+      <div>
+        <div class="album-row" id="album-row-${al.id}">
+          <img class="album-cover" src="${al.cover || ''}" alt=""
+            onerror="this.src=''" style="${al.cover ? '' : 'opacity:0.2'}">
+          <div class="album-info">
+            <div class="album-name">${al.title}</div>
+            <div class="album-year">${al.year || '?'} · ${al.tracks ? al.tracks+' tr.' : 'ładowanie…'}</div>
+          </div>
+          <div class="album-score-display ${sc===null?'unrated':scoreClass(sc)}">
+            ${sc !== null ? sc+'%' : al.tracks ? 'nieoceniony' : '…'}
+            ${sc !== null ? `<div style="font-size:0.72em;color:var(--muted);font-weight:400">${al.liked}/${al.tracks}</div>` : ''}
+          </div>
+          <div class="album-actions">
+            <button class="btn-rate" onclick="toggleRateInline('${al.id}')">
+              ${sc !== null ? '✏ Edytuj' : '★ Oceń'}
+            </button>
+            <button class="btn-icon" onclick="deleteAlbum('${al.id}')" title="Usuń album">✕</button>
+          </div>
+        </div>
+        <div class="rate-inline" id="rate-inline-${al.id}">
+          <div class="rate-row">
+            <span class="rate-label">Polubiłem</span>
+            <input class="rate-input-sm" id="liked-${al.id}" type="number" min="0"
+              max="${al.tracks||999}" placeholder="ile?" value="${al.liked??''}"
+              oninput="updateRatePreview('${al.id}')">
+            <span class="rate-label">z</span>
+            <input class="rate-input-sm" id="tracks-${al.id}" type="number" min="1"
+              placeholder="tracki" value="${al.tracks||''}"
+              oninput="updateRatePreview('${al.id}')">
+            <span class="rate-label">tracków</span>
+            <span class="rate-preview" id="rate-preview-${al.id}">
+              ${sc !== null ? sc+'%' : ''}
+            </span>
+          </div>
+          <div>
+            <button class="btn-save-rate" onclick="saveRating('${al.id}')">Zapisz</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('')}</div>`;
+}
+
+function toggleRateInline(albumId) {
+  const el = document.getElementById('rate-inline-'+albumId);
+  const wasOpen = el.classList.contains('open');
+  // close all
+  document.querySelectorAll('.rate-inline').forEach(x=>x.classList.remove('open'));
+  if (!wasOpen) el.classList.add('open');
+}
+
+function updateRatePreview(albumId) {
+  const liked  = parseInt(document.getElementById('liked-'+albumId)?.value);
+  const tracks = parseInt(document.getElementById('tracks-'+albumId)?.value);
+  const prev   = document.getElementById('rate-preview-'+albumId);
+  if (prev && liked >= 0 && tracks > 0) {
+    const pct = Math.round(liked/tracks*100);
+    prev.textContent = pct+'%';
+  } else if (prev) {
+    prev.textContent = '';
+  }
+}
+
+function saveRating(albumId) {
+  const artist = state.artists.find(a=>a.id===detailArtistId);
+  if (!artist) return;
+  const album = artist.albums.find(a=>a.id===albumId);
+  if (!album) return;
+  const liked  = parseInt(document.getElementById('liked-'+albumId)?.value);
+  const tracks = parseInt(document.getElementById('tracks-'+albumId)?.value);
+  if (isNaN(liked)||isNaN(tracks)||tracks<=0||liked<0) { showToast('⚠ Niepoprawne wartości'); return; }
+  if (liked > tracks) { showToast('⚠ Polubiłeś więcej niż tracków?'); return; }
+  album.liked  = liked;
+  album.tracks = tracks;
+  saveState();
+  renderDetail();
+  renderAll();
+  showToast(`✓ Oceniono: ${album.title} — ${Math.round(liked/tracks*100)}%`);
+}
+
+function deleteAlbum(albumId) {
+  const artist = state.artists.find(a=>a.id===detailArtistId);
+  if (!artist) return;
+  artist.albums = artist.albums.filter(a=>a.id!==albumId);
+  saveState(); renderDetail(); renderAll();
+  showToast('Album usunięty');
+}
+
+function toggleExpected(){
+  const artist = state.artists.find(a=>a.id===detailArtistId);
+  if(!artist) return;
+  artist.expected = !artist.expected;
+  saveState();
+  renderDetail();
+  renderAll();
+  showToast(artist.expected ? '🔵 Oznaczono: spodziewana płyta' : 'Usunięto oznaczenie');
+}
+
+function toggleArchiveArtist() {
+  const artist = state.artists.find(a=>a.id===detailArtistId);
+  if (!artist) return;
+  if (artist.status === 'active')        { artist.status = 'pending';  showToast('🕐 Przeniesiono do "Do przesłuchania"'); }
+  else if (artist.status === 'pending')  { artist.status = 'archive';  showToast('📦 Przeniesiono do archiwum'); }
+  else                                   { artist.status = 'active';   showToast('↩ Przywrócono do aktywnych'); }
+  saveState(); renderAll(); renderDetail();
+}
+
+function deleteArtist() {
+  const artist = state.artists.find(a=>a.id===detailArtistId);
+  if (!confirm(`Usunąć artystę "${artist?.name}"?`)) return;
+  state.artists = state.artists.filter(a=>a.id!==detailArtistId);
+  saveState(); renderAll();
+  closeModal('overlay-detail');
+  showToast('Artysta usunięty');
+}
+
+async function refreshArtistAlbums() {
+  const artist = state.artists.find(a=>a.id===detailArtistId);
+  if (!artist?.mbid) { showToast('⚠ Brak ID MusicBrainz dla tego artysty'); return; }
+  showToast('↻ Odświeżam dyskografię…');
+  try {
+    const url = `https://musicbrainz.org/ws/2/release-group?artist=${artist.mbid}&type=album|ep&limit=100&fmt=json`;
+    const r = await fetch(url, {headers:{'User-Agent':'MusicVault/1.0 (personal)'}});
+    const data = await r.json();
+    const groups = (data['release-groups']||[])
+      .filter(rg=>['Album','EP'].includes(rg['primary-type']))
+      .sort((a,b)=>(a['first-release-date']||'').localeCompare(b['first-release-date']||''));
+
+    let added = 0;
+    groups.forEach(rg => {
+      if (!artist.albums.find(a=>a.mbid===rg.id)) {
+        artist.albums.push({
+          id:'al'+Date.now()+Math.random().toString(36).slice(2),
+          title:rg.title,
+          year:(rg['first-release-date']||'').slice(0,4),
+          mbid:rg.id, tracks:null, liked:null, cover:null
+        });
+        added++;
+      }
+    });
+    saveState(); renderDetail(); renderAll();
+    showToast(`✓ Odświeżono — dodano ${added} nowych albumów`);
+    fetchTrackCounts(artist.id);
+    fetchCovers(artist.id);
+  } catch(e) {
+    showToast('❌ Błąd połączenia');
+  }
+}
+
+// ══════════════════════════════════════════════
+// ADD ALBUM MANUAL
+// ══════════════════════════════════════════════
+function openAddAlbum() {
+  document.getElementById('album-title-input').value='';
+  document.getElementById('album-year-input').value='';
+  document.getElementById('album-tracks-input').value='';
+  openModal('overlay-album');
+}
+
+function confirmAddAlbum() {
+  const title  = document.getElementById('album-title-input').value.trim();
+  const year   = document.getElementById('album-year-input').value.trim();
+  const tracks = parseInt(document.getElementById('album-tracks-input').value);
+  if (!title) { showToast('⚠ Wpisz tytuł'); return; }
+  const artist = state.artists.find(a=>a.id===detailArtistId);
+  if (!artist) return;
+  artist.albums.push({
+    id:'al'+Date.now(), title, year, tracks:isNaN(tracks)?null:tracks,
+    liked:null, cover:null, mbid:null
+  });
+  saveState(); renderDetail(); renderAll();
+  closeModal('overlay-album');
+  showToast(`✓ Dodano album: ${title}`);
+}
+
+// ══════════════════════════════════════════════
+// EXPORT / IMPORT
+// ══════════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `music_vault_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('📤 Wyeksportowano');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      state = JSON.parse(ev.target.result);
+      saveState(); renderAll();
+      showToast('📥 Import zakończony!');
+    } catch(err) { showToast('❌ Błąd importu'); }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ══════════════════════════════════════════════
+// MODAL UTILS
+// ══════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+loadState();
+renderAll();
+
+// close overlay on backdrop click
+document.querySelectorAll('.overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target===ov) ov.classList.remove('open'); });
+});
+
+// artist search input listener
+document.getElementById('artist-search-input').addEventListener('input', e => {
+  clearTimeout(searchTimeout);
+  const q = e.target.value.trim();
+  if (q.length < 2) {
+    document.getElementById('artist-search-results').classList.remove('show');
+    return;
+  }
+  searchTimeout = setTimeout(() => searchMusicBrainz(q), 400);
+});
+</script>
+</body>
+</html>

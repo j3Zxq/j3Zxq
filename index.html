@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+  requireAuth(); // blokuje render, jeśli brak sesji
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS</title>
+<link rel="icon" type="image/png" sizes="32x32" href="grafiki/akatsuki_logo.png">
+<link rel="shortcut icon" type="image/png" href="grafiki/akatsuki_logo.png">
+<link rel="apple-touch-icon" href="grafiki/akatsuki_logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:   #0a0a0a;
+  --black2:  #111111;
+  --black3:  #1a1a1a;
+  --red:     #8b0000;
+  --red2:    #b30000;
+  --red3:    #cc1a1a;
+  --coal:    #2a2a2a;
+  --coal2:   #383838;
+  --text:    #e8e8e8;
+  --muted:   rgba(232,232,232,0.38);
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+}
+
+html, body {
+  height: 100%;
+  background: var(--black);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+/* ── NOISE TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+/* ── SCANLINES ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ── WATERMARK (logo w tle) ── */
+.bg-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 45vw;
+  max-width: 600px;
+  min-width: 260px;
+  height: auto;
+  opacity: 0.08;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+/* ── LAYOUT ── */
+.hub {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 40px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 40px; right: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--red2), transparent);
+  opacity: 0.5;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(180,0,0,0.5));
+  display: block;
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.brand-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.6em;
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: var(--text);
+  text-shadow: 0 0 20px rgba(180,0,0,0.4);
+  line-height: 1;
+}
+.brand-name span {
+  color: var(--red2);
+}
+.brand-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.7em;
+  letter-spacing: 4px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.header-right {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.75em;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-align: right;
+}
+#clock {
+  font-size: 1.1em;
+  color: var(--text);
+  display: block;
+  font-weight: 600;
+}
+
+/* ── CAROUSEL AREA ── */
+.carousel-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 30px 0;
+}
+
+/* background glow */
+.carousel-area::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,0,0,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  transition: opacity 0.5s;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+}
+
+/* ── ARROWS ── */
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  background: rgba(26,26,26,0.9);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  font-size: 1.2em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 20;
+  clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+}
+.arrow:hover {
+  background: var(--red);
+  border-color: var(--red2);
+  color: var(--text);
+  box-shadow: 0 0 20px rgba(139,0,0,0.4);
+}
+.arrow-left  { left: 40px; }
+.arrow-right { right: 40px; clip-path: polygon(0% 0%, 90% 0%, 100% 100%, 10% 100%); }
+
+/* ── CARD TRACK (pozycjonowanie absolutne = wsparcie dla pętli nieskończonej) ── */
+.card-track {
+  position: relative;
+  width: 100%;
+}
+
+/* ── CARD ── */
+.card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 420px;
+  height: 500px;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.55s ease,
+              filter 0.55s ease;
+  transform-origin: center center;
+}
+
+.card.active {
+  opacity: 1;
+  filter: none;
+  z-index: 5;
+}
+.card.adjacent {
+  opacity: 0.45;
+  filter: blur(1px) grayscale(0.3);
+  z-index: 3;
+}
+.card.far {
+  opacity: 0.2;
+  filter: blur(2px) grayscale(0.6);
+  z-index: 1;
+}
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+  background: var(--black2);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.card.active .card-inner {
+  border-color: rgba(139,0,0,0.5);
+  box-shadow:
+    0 0 0 1px rgba(139,0,0,0.2),
+    0 20px 60px rgba(0,0,0,0.8),
+    0 0 40px rgba(139,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.card.active:hover .card-inner {
+  border-color: var(--red2);
+  box-shadow:
+    0 0 0 1px rgba(179,0,0,0.4),
+    0 24px 70px rgba(0,0,0,0.9),
+    0 0 60px rgba(139,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* top accent bar */
+.card-accent {
+  height: 3px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* card background pattern */
+.card-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.5) 0px,
+      rgba(255,255,255,0.5) 1px,
+      transparent 1px,
+      transparent 20px
+    );
+  pointer-events: none;
+}
+
+/* corner decoration */
+.card-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: rgba(255,255,255,0.08);
+  border-style: solid;
+  pointer-events: none;
+}
+.card-corner.tl { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
+.card-corner.br { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
+.card.active .card-corner { border-color: rgba(139,0,0,0.4); }
+
+.card-body {
+  flex: 1;
+  padding: 32px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.card-icon {
+  font-size: 2.4em;
+  margin-bottom: 20px;
+  display: block;
+  filter: drop-shadow(0 0 12px rgba(139,0,0,0.3));
+}
+
+.card-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.65em;
+  letter-spacing: 4px;
+  color: var(--red3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.3em;
+  font-weight: 700;
+  letter-spacing: 3px;
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: 16px;
+  text-shadow: 0 0 20px rgba(200,200,200,0.1);
+}
+
+.card-desc {
+  font-size: 0.82em;
+  line-height: 1.65;
+  color: var(--muted);
+  flex: 1;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 18px;
+}
+
+.tag {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.65em;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  font-weight: 500;
+}
+.card.active .tag {
+  border-color: rgba(139,0,0,0.35);
+  color: rgba(232,232,232,0.55);
+}
+
+.card-footer {
+  padding: 14px 28px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+.card.active .card-footer { border-top-color: rgba(139,0,0,0.2); }
+
+.card-filename {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.68em;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.card-arrow-icon {
+  font-size: 0.9em;
+  color: var(--red3);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: all 0.2s;
+}
+.card.active:hover .card-arrow-icon {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── DOTS ── */
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 0 28px;
+  flex-shrink: 0;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  background: var(--coal2);
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.dot.active {
+  background: var(--red2);
+  width: 24px;
+  box-shadow: 0 0 8px rgba(179,0,0,0.5);
+}
+
+/* ── KEYBOARD HINT ── */
+.keyboard-hint {
+  position: absolute;
+  bottom: 14px;
+  right: 40px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.62em;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.12);
+  text-transform: uppercase;
+}
+
+/* ── INDEX COUNTER ── */
+.index-counter {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.72em;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-align: center;
+  padding: 0 0 4px;
+  flex-shrink: 0;
+}
+.index-counter span { color: var(--red2); }
+
+/* ── PROGRESS BAR ── */
+.progress-bar {
+  height: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+  position: relative;
+  margin: 0 40px;
+}
+.progress-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--red), var(--red2));
+  transition: width 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 0 8px rgba(179,0,0,0.4);
+}
+
+@media (max-width: 900px) {
+  .header { padding: 16px 20px 14px; }
+  .arrow-left  { left: 10px; width: 40px; height: 40px; }
+  .arrow-right { right: 10px; width: 40px; height: 40px; }
+  .brand-logo { width: 30px; height: 30px; min-width: 30px; }
+  .brand-name { font-size: 1.2em; letter-spacing: 5px; }
+  .keyboard-hint { display: none; }
+}
+</style>
+</head>
+<body>
+<img class="bg-watermark" src="grafiki/akatsuki_logo.png" alt="" aria-hidden="true">
+<div class="hub">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand">
+      <img class="brand-logo" src="grafiki/akatsuki_logo.png" alt="Akatsuki Logo">
+      <div class="brand-text">
+        <div class="brand-name">N<span>E</span>XUS</div>
+        <div class="brand-sub">Personal Dashboard</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="clock">00:00:00</span>
+      <span id="date-str"></span>
+    </div>
+  </header>
+
+  <!-- CAROUSEL -->
+  <div class="carousel-area">
+    <button class="arrow arrow-left" id="arrow-left" onclick="navClick(-1)">&#8592;</button>
+    <div style="overflow:hidden;width:100%;display:flex;justify-content:center;">
+      <div class="card-track" id="card-track"></div>
+    </div>
+    <button class="arrow arrow-right" id="arrow-right" onclick="navClick(1)">&#8594;</button>
+  </div>
+
+  <!-- INDEX -->
+  <div class="index-counter" id="index-counter"></div>
+
+  <!-- DOTS -->
+  <div class="dots" id="dots"></div>
+
+  <!-- PROGRESS -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <div class="keyboard-hint">← → NAWIGACJA &nbsp;·&nbsp; ENTER OTWÓRZ</div>
+
+</div>
+
+<script>
+const CARDS = [
+  {
+    href: 'support_gauntlet.html',
+    icon: '🛡️',
+    label: 'League of Legends',
+    title: 'SUPPORT\nGAUNTLET',
+    desc: 'Tracker do challengu — losuj lub wybieraj championa, śledź W/L, rangi i życia każdej postaci. Wyłoń Top 3 na koniec sezonu.',
+    tags: ['LoL', 'Tracker', 'Rangi'],
+    accent: 'linear-gradient(90deg, #c89b3c, #0ac8b9)',
+  },
+  {
+    href: 'marksman_gauntlet.html',
+    icon: '🏹',
+    label: 'League of Legends',
+    title: 'MARKSMAN\nGAUNTLET',
+    desc: 'Challenge dla marksmana — losuj lub wybieraj ADC, śledź W/L, rangi i życia każdej postaci. MVP system.',
+    tags: ['LoL', 'ADC', 'MVP'],
+    accent: 'linear-gradient(90deg, #f39c12, #e05555)',
+  },
+  {
+    href: 'game_log.html',
+    icon: '🎮',
+    label: 'Gaming',
+    title: 'GAME LOG',
+    desc: 'Dziennik ukończonych gier z czasem, platformą, datą i statusem Steam. Backlog, premiery i tracker platyn.',
+    tags: ['Gry', 'Backlog', 'Platyny'],
+    accent: 'linear-gradient(90deg, #00c853, #0ac8b9)',
+  },
+  {
+    href: 'music_vault.html',
+    icon: '🎵',
+    label: 'Muzyka',
+    title: 'MUSIC VAULT',
+    desc: 'Kolekcja przesłuchanych płyt z ocenami. Artyści, gatunki, albumy — wszystko w jednym miejscu.',
+    tags: ['Muzyka', 'Oceny', 'Albumy'],
+    accent: 'linear-gradient(90deg, #9b30ff, #e84393)',
+  },
+  {
+    href: 'screen_diary.html',
+    icon: '🎬',
+    label: 'Filmy & Seriale',
+    title: 'SCREEN DIARY',
+    desc: 'Dziennik obejrzanych filmów i seriali z plakatami z TMDB, statystykami, flip kartami i listą do obejrzenia.',
+    tags: ['Filmy', 'Seriale', 'TMDB'],
+    accent: 'linear-gradient(90deg, #d4a853, #e05555)',
+  },
+  {
+    href: 'kronika_khorinis.html',
+    icon: '⚔️',
+    label: 'Gothic',
+    title: 'KRONIKA\nKHORINIS',
+    desc: 'Dziennik misji do Gothic I, II, I Remake i Kronik Myrtany. Śledź zadania per gildia i postęp ukończenia.',
+    tags: ['Gothic', 'Misje', 'Gildie'],
+    accent: 'linear-gradient(90deg, #8b1a1a, #c8923c)',
+  },
+];
+
+// current jest wartością WIRTUALNĄ (nieograniczoną) - może rosnąć/maleć bez końca.
+// Dzięki temu karuzela może "kręcić się" w nieskończoność w obie strony.
+let current = 0;
+let isAnimating = false;
+
+function realIndex(v){
+  const N = CARDS.length;
+  return ((v % N) + N) % N;
+}
+
+// ─────────────────────────────────────────────
+// DŹWIĘK NAWIGACJI
+// Domyślnie odtwarzany jest krótki syntetyzowany "blip" przez Web Audio API,
+// więc dźwięk działa "z pudełka" bez potrzeby dołączania żadnego pliku.
+//
+// Aby podmienić dźwięk na własny plik: wpisz jego ścieżkę poniżej w NAV_SOUND_SRC,
+// np. NAV_SOUND_SRC = 'grafiki/click.mp3';  — wtedy zamiast syntezatora
+// odtwarzany będzie Twój plik audio.
+// ─────────────────────────────────────────────
+const NAV_SOUND_SRC = ''; // <- tu wklej ścieżkę do własnego dźwięku, jeśli chcesz go podmienić
+
+let audioCtx = null;
+let navAudioEl = null;
+if (NAV_SOUND_SRC) {
+  navAudioEl = new Audio(NAV_SOUND_SRC);
+  navAudioEl.preload = 'auto';
+}
+
+function playSynthBlip(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(760, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(360, audioCtx.currentTime + 0.09);
+    gain.gain.setValueAtTime(0.16, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.13);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.13);
+  } catch(e) { /* Web Audio niedostępne - po prostu bez dźwięku */ }
+}
+
+function playNavSound(){
+  if (NAV_SOUND_SRC && navAudioEl) {
+    navAudioEl.currentTime = 0;
+    navAudioEl.play().catch(() => playSynthBlip());
+  } else {
+    playSynthBlip();
+  }
+}
+
+// ── BUILD CARDS ──
+function buildCards(){
+  const track = document.getElementById('card-track');
+  const dots  = document.getElementById('dots');
+  track.innerHTML = '';
+  dots.innerHTML  = '';
+
+  const CARD_W = window.innerWidth <= 900 ? 320 : 420;
+  const CARD_H = window.innerWidth <= 900 ? 430 : 500;
+  track.style.height = CARD_H + 'px';
+
+  CARDS.forEach((c, i) => {
+    const el = document.createElement('a');
+    el.className = 'card';
+    el.href = c.href;
+    el.target = '_blank';
+    el.rel = 'noopener';
+    el.style.width = CARD_W + 'px';
+    el.style.height = CARD_H + 'px';
+    el.dataset.index = i;
+
+    // blokuj otwarcie linku gdy karta nie jest aktywna
+    el.addEventListener('click', e => {
+      if(i !== realIndex(current)){ e.preventDefault(); return; }
+    });
+
+    el.innerHTML = `
+      <div class="card-inner">
+        <div class="card-accent" style="background:${c.accent}"></div>
+        <div class="card-bg"></div>
+        <div class="card-corner tl"></div>
+        <div class="card-corner br"></div>
+        <div class="card-body">
+          <span class="card-icon">${c.icon}</span>
+          <div class="card-label">${c.label}</div>
+          <div class="card-title">${c.title.replace('\n','<br>')}</div>
+          <div class="card-desc">${c.desc}</div>
+          <div class="card-tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        </div>
+        <div class="card-footer">
+          <span class="card-filename">${c.href}</span>
+          <span class="card-arrow-icon">→</span>
+        </div>
+      </div>`;
+    track.appendChild(el);
+
+    // dot
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    dot.onclick = () => goTo(i);
+    dots.appendChild(dot);
+  });
+
+  updatePositions(false);
+}
+
+// Pozycjonuje każdą kartę względem NAJBLIŻSZEJ (w sensie kołowym) reprezentacji
+// jej indeksu wobec bieżącego `current`. Dzięki temu ostatnia karta "podchodzi"
+// tuż za pierwszą (i odwrotnie), co daje płynną, nieskończoną pętlę.
+function updatePositions(animate = true){
+  const N = CARDS.length;
+  const cards = Array.from(document.querySelectorAll('.card'));
+  if(!cards.length) return;
+  const CARD_W = parseInt(cards[0].style.width) || 420;
+  const SPACING = CARD_W * 0.88;
+  const rIndex = realIndex(current);
+
+  if(!animate){
+    cards.forEach(c => c.style.transition = 'none');
+  }
+
+  cards.forEach((card, i) => {
+    // najbliższa "wirtualna" pozycja karty i względem current (pętla kołowa)
+    const vpos = i + Math.round((current - i) / N) * N;
+    const diff = vpos - current;
+    const absDiff = Math.abs(diff);
+
+    card.classList.remove('active','adjacent','far');
+    let scale;
+    if(absDiff === 0){ card.classList.add('active'); scale = 1; }
+    else if(absDiff === 1){ card.classList.add('adjacent'); scale = 0.82; }
+    else { card.classList.add('far'); scale = 0.68; }
+
+    card.style.transform = `translate(-50%, -50%) translateX(${diff * SPACING}px) scale(${scale})`;
+  });
+
+  // dots
+  document.querySelectorAll('.dot').forEach((d,i) => {
+    d.classList.toggle('active', i === rIndex);
+  });
+
+  // index counter
+  document.getElementById('index-counter').innerHTML =
+    `<span>${rIndex + 1}</span> / ${N}`;
+
+  // progress bar
+  document.getElementById('progress-fill').style.width =
+    ((rIndex / (N - 1)) * 100) + '%';
+
+  if(!animate){
+    // wymuś reflow, potem przywróć przejścia
+    void document.getElementById('card-track').offsetHeight;
+    cards.forEach(c => c.style.transition = '');
+  }
+}
+
+// dir: -1 (wstecz) / 1 (dalej). Brak ograniczeń zakresu -> pętla nieskończona:
+// z ostatniej karty "dalej" przechodzi płynnie do pierwszej i odwrotnie.
+function move(dir){
+  if(isAnimating) return;
+  isAnimating = true;
+  current += dir;
+  updatePositions(true);
+  setTimeout(() => { isAnimating = false; }, 580);
+}
+
+// wrapper wywoływany z przycisków strzałek: odtwarza dźwięk + nawiguje
+function navClick(dir){
+  playNavSound();
+  move(dir);
+}
+
+function goTo(i){
+  if(isAnimating) return;
+  const N = CARDS.length;
+  const rIndex = realIndex(current);
+  if(i === rIndex) return;
+  // wybierz najkrótszą drogę po okręgu (przez "koniec-początek" jeśli krócej)
+  let diff = i - rIndex;
+  if(diff > N / 2) diff -= N;
+  if(diff < -N / 2) diff += N;
+  isAnimating = true;
+  current += diff;
+  updatePositions(true);
+  setTimeout(() => { isAnimating = false; }, 580);
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowLeft')  move(-1);
+  if(e.key === 'ArrowRight') move(1);
+  if(e.key === 'Enter'){
+    window.open(CARDS[realIndex(current)].href, '_blank', 'noopener');
+  }
+});
+
+// ── TOUCH SWIPE ──
+let touchX = null;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, {passive:true});
+document.addEventListener('touchend', e => {
+  if(touchX === null) return;
+  const diff = touchX - e.changedTouches[0].clientX;
+  if(Math.abs(diff) > 50) move(diff > 0 ? 1 : -1);
+  touchX = null;
+}, {passive:true});
+
+// ── CLOCK ──
+function updateClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('date-str').textContent =
+    now.toLocaleDateString('pl-PL', {weekday:'short',day:'numeric',month:'long'});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── INIT ──
+buildCards();
+window.addEventListener('resize', () => { buildCards(); });
+</script>
+</body>
+</html>

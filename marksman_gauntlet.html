@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+  requireAuth(); // blokuje render, jeśli brak sesji
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marksman Gauntlet</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #c89b3c;
+            --gold-bright: #f0e6d2;
+            --gold-dim: rgba(200,155,60,0.3);
+            --blue: #f39c12;
+            --green: #00ffcc;
+            --red: #ff4e4e;
+            --bg: #060d18;
+            --bg2: #0a1628;
+            --surface: rgba(8,16,30,0.97);
+            --glow: var(--gold);
+            --rank-color: #746d65;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg);
+            color: var(--gold-bright);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 1.2s ease;
+        }
+
+        /* ── CANVAS ── */
+        #bg-canvas {
+            position: fixed; inset: 0;
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── LAYOUT ── */
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 0;
+            min-height: 100vh;
+            position: relative; z-index: 1;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            grid-row: 1 / 3;
+            padding: 20px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background: rgba(4,10,20,0.96);
+            border-right: 1px solid var(--gold-dim);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .side-box {
+            border: 1px solid var(--gold-dim);
+            padding: 14px;
+            background: rgba(0,0,0,0.4);
+            transition: border-color 0.4s;
+        }
+        .side-box:hover { border-color: var(--gold); }
+
+        .side-box h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 0.65em;
+            letter-spacing: 3px;
+            color: var(--gold);
+            border-bottom: 1px solid var(--gold-dim);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82em;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .stat-val { color: var(--gold); font-weight: 700; }
+
+        .bar-row { margin-bottom: 10px; }
+        .bar-label {
+            display: flex; justify-content: space-between;
+            font-size: 0.72em; margin-bottom: 3px; opacity: 0.8;
+        }
+        .bar-track {
+            height: 5px; background: rgba(255,255,255,0.08);
+            border-radius: 2px; overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%; border-radius: 2px;
+            background: var(--gold);
+            transition: width 0.6s cubic-bezier(.4,0,.2,1);
+        }
+
+        .region-row {
+            display: flex; justify-content: space-between;
+            font-size: 0.78em; padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .region-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block; margin-right: 6px;
+        }
+
+        /* streak */
+        .streak-display {
+            text-align: center;
+            padding: 8px 0;
+        }
+        .streak-num {
+            font-family: 'Cinzel', serif;
+            font-size: 2.2em;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .streak-label { font-size: 0.72em; letter-spacing: 2px; opacity: 0.7; }
+        .streak-w { color: var(--green); }
+        .streak-l { color: var(--red); }
+
+        /* history */
+        .history-list {
+            display: flex; flex-direction: column; gap: 4px;
+            max-height: 200px; overflow-y: auto; scrollbar-width: none;
+        }
+        .hist-item {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.78em; padding: 4px 6px;
+            background: rgba(255,255,255,0.03);
+            border-left: 3px solid transparent;
+        }
+        .hist-item.w { border-color: var(--green); }
+        .hist-item.l { border-color: var(--red); }
+        .hist-date { opacity: 0.45; font-size: 0.85em; }
+
+        /* top3 */
+        .top3-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.82em;
+        }
+        .top3-medal { font-size: 1.1em; width: 20px; text-align: center; }
+        .top3-wr { margin-left: auto; color: var(--gold); font-weight: 700; }
+
+        /* ── MAIN ── */
+        .main {
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* header */
+        .header {
+            text-align: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--gold-dim);
+        }
+        .header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.2em;
+            letter-spacing: 10px;
+            color: var(--gold);
+            text-shadow: 0 0 30px rgba(200,155,60,0.4);
+        }
+        .header .subtitle {
+            font-size: 0.8em;
+            letter-spacing: 4px;
+            opacity: 0.5;
+            margin-top: 4px;
+        }
+
+        /* rank badge */
+        .rank-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 4px 14px;
+            border: 1px solid var(--rank-color);
+            background: rgba(0,0,0,0.4);
+            font-family: 'Cinzel', serif;
+            font-size: 0.85em;
+            letter-spacing: 3px;
+            color: var(--rank-color);
+            margin-top: 8px;
+            transition: all 0.5s;
+        }
+
+        /* result area */
+        .result-area {
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--gold-dim);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 340px;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.5s;
+        }
+        .result-area::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(200,155,60,0.06), transparent 70%);
+            pointer-events: none;
+        }
+
+        #champion-icon {
+            width: 140px; height: 140px;
+            border: 3px solid var(--glow);
+            border-radius: 4px;
+            display: none;
+            margin-bottom: 14px;
+            box-shadow: 0 0 30px var(--glow);
+            transition: box-shadow 0.3s;
+            animation: iconPulse 2.5s ease-in-out infinite;
+        }
+        @keyframes iconPulse {
+            0%,100% { box-shadow: 0 0 20px var(--glow); }
+            50% { box-shadow: 0 0 50px var(--glow), 0 0 80px rgba(200,155,60,0.2); }
+        }
+
+        .champ-name {
+            font-family: 'Cinzel', serif;
+            font-size: 2.6em;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: var(--gold-bright);
+            text-shadow: 0 0 20px rgba(200,155,60,0.5);
+            transition: all 0.3s;
+        }
+
+        /* slot machine */
+        .slot-wrapper {
+            overflow: hidden;
+            height: 80px;
+            width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--glow);
+            box-shadow: 0 0 30px var(--glow);
+            border-radius: 4px;
+            margin-bottom: 14px;
+        }
+        .slot-reel {
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.05s linear;
+            width: 80px;
+        }
+        .slot-item {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .slot-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* champ name centered */
+        .champ-name {
+            font-family: 'Cinzel', serif;
+            font-size: 2.6em;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: var(--gold-bright);
+            text-shadow: 0 0 20px rgba(200,155,60,0.5);
+            transition: all 0.3s;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* drawn champ stats */
+        .drawn-stats {
+            display: none;
+            gap: 14px;
+            margin-top: 12px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .drawn-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 6px 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.3);
+            min-width: 70px;
+        }
+        .drawn-stat-val {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1em;
+            font-weight: 700;
+        }
+        .drawn-stat-label {
+            font-size: 0.6em;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+            font-size: 0.72em;
+            letter-spacing: 3px;
+            padding: 3px 12px;
+            border: 1px solid currentColor;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+        /* arch badge */
+        .arch-badge {
+            font-size: 0.72em;
+            letter-spacing: 3px;
+            padding: 3px 12px;
+            border: 1px solid currentColor;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        /* synergy */
+        .synergy-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        .syn-card {
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .syn-card .syn-label {
+            font-size: 0.65em;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.7;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .syn-card .syn-type { font-weight: 700; font-size: 0.95em; }
+        .syn-card .syn-ex { font-size: 0.75em; opacity: 0.7; margin-top: 4px; font-style: italic; }
+        .syn-perfect { border-color: var(--gold) !important; }
+        .syn-perfect .syn-type { color: var(--gold); }
+        .syn-good { border-color: var(--green) !important; }
+        .syn-good .syn-type { color: var(--green); }
+        .syn-bad { border-color: var(--red) !important; }
+        .syn-bad .syn-type { color: var(--red); }
+
+        /* action buttons */
+        .action-btns {
+            display: none;
+            gap: 16px;
+            width: 100%;
+            margin-top: 22px;
+        }
+        .btn-result {
+            flex: 1; padding: 14px;
+            font-family: 'Cinzel', serif;
+            font-size: 1em; font-weight: 700;
+            letter-spacing: 4px;
+            cursor: pointer;
+            border: 1px solid;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        .btn-win { color: var(--green); border-color: var(--green); }
+        .btn-win:hover { background: rgba(0,255,204,0.12); }
+        .btn-lose { color: var(--red); border-color: var(--red); }
+        .btn-lose:hover { background: rgba(255,78,78,0.12); }
+        .btn-mvp {
+            flex: 0 0 auto;
+            padding: 14px 16px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.85em;
+            color: var(--gold);
+            border-color: var(--gold);
+        }
+        .btn-mvp:hover { background: rgba(244,197,80,0.12); }
+        .mvp-star {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.62em;
+            color: var(--gold);
+            margin-left: 6px;
+        }
+
+        /* draw button */
+        .btn-draw {
+            width: 100%; padding: 16px;
+            font-family: 'Cinzel', serif;
+            font-size: 1.3em; font-weight: 700;
+            letter-spacing: 6px;
+            cursor: pointer;
+            border: 1px solid var(--blue);
+            background: rgba(10,200,185,0.08);
+            color: var(--blue);
+            transition: all 0.25s;
+        }
+        .btn-draw:hover {
+            background: rgba(10,200,185,0.18);
+            box-shadow: 0 0 20px rgba(10,200,185,0.3);
+        }
+        .btn-draw:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* table */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%; border-collapse: collapse;
+            font-size: 0.85em;
+        }
+        thead th {
+            font-family: 'Cinzel', serif;
+            font-size: 0.72em;
+            letter-spacing: 2px;
+            color: var(--gold);
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--gold-dim);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        thead th:hover { color: var(--gold-bright); }
+        thead th .sort-arrow { margin-left: 4px; opacity: 0.4; }
+        thead th.sorted .sort-arrow { opacity: 1; color: var(--blue); }
+
+        tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.15s;
+        }
+        tbody tr:hover { background: rgba(200,155,60,0.06); }
+        tbody tr.eliminated { opacity: 0.28; }
+        tbody td { padding: 8px; }
+
+        .wr-bar-cell { display: flex; align-items: center; gap: 8px; }
+        .wr-mini { width: 60px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+        .wr-mini-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.5s; }
+
+        .lives-pips { display: flex; gap: 3px; }
+        .pip { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+        .pip.dead { background: rgba(255,255,255,0.1); }
+
+        .arch-tag {
+            font-size: 0.7em; padding: 2px 6px;
+            border: 1px solid currentColor;
+            border-radius: 2px;
+        }
+
+        .filter-row {
+            display: flex; gap: 10px; flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .filter-btn {
+            padding: 5px 14px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.78em; letter-spacing: 2px;
+            cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+            background: transparent; color: rgba(255,255,255,0.6);
+            transition: all 0.2s; text-transform: uppercase;
+        }
+        .filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(200,155,60,0.1); }
+
+        /* admin */
+        .admin-row {
+            display: flex; gap: 10px; justify-content: center;
+            flex-wrap: wrap; padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            opacity: 0.45;
+            transition: opacity 0.2s;
+        }
+        .admin-row:hover { opacity: 0.85; }
+        .btn-admin {
+            padding: 6px 14px; font-size: 0.75em; letter-spacing: 2px;
+            cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+            background: transparent; color: rgba(255,255,255,0.7);
+            font-family: 'Rajdhani', sans-serif;
+            transition: all 0.2s; text-transform: uppercase;
+        }
+        .btn-admin:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-admin.danger { color: var(--red); border-color: rgba(255,78,78,0.3); }
+        .btn-admin.danger:hover { border-color: var(--red); background: rgba(255,78,78,0.08); }
+
+        /* champion tooltip */
+        .champ-tooltip {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(6px) scale(0.97);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            width: 200px;
+        }
+        .champ-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .tooltip-inner {
+            background: rgba(4, 10, 22, 0.97);
+            border: 1px solid var(--gold-dim);
+            overflow: hidden;
+        }
+        .tooltip-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            object-position: top;
+            display: block;
+        }
+        .tooltip-body {
+            padding: 10px 12px;
+        }
+        .tooltip-name {
+            font-family: 'Cinzel', serif;
+            font-size: 0.85em;
+            letter-spacing: 2px;
+            color: var(--gold);
+            margin-bottom: 6px;
+        }
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75em;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .tooltip-row:last-child { border-bottom: none; }
+        .tooltip-row span:last-child { font-weight: 700; }
+        .tooltip-rank-bar {
+            height: 3px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .tooltip-rank-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.4s ease;
+        }
+
+        /* sound toggle */
+        .sound-toggle {
+            position: fixed;
+            bottom: 24px; left: 24px;
+            z-index: 998;
+            background: rgba(4,10,22,0.9);
+            border: 1px solid var(--gold-dim);
+            color: var(--gold-bright);
+            padding: 8px 12px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+        .sound-toggle:hover { border-color: var(--gold); }
+        .sound-toggle.muted { opacity: 0.4; }
+
+        /* toast */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            padding: 12px 20px;
+            background: var(--bg2);
+            border: 1px solid var(--gold-dim);
+            font-size: 0.85em; letter-spacing: 1px;
+            z-index: 999;
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.3s cubic-bezier(.4,0,.2,1);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* modal */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 500;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        .modal {
+            background: var(--bg2);
+            border: 1px solid var(--gold-dim);
+            padding: 30px 36px;
+            max-width: 440px; width: 90%;
+            text-align: center;
+        }
+        .modal h3 {
+            font-family: 'Cinzel', serif;
+            color: var(--gold);
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+        }
+        .modal p { opacity: 0.75; font-size: 0.9em; margin-bottom: 20px; }
+        .modal-btns { display: flex; gap: 12px; justify-content: center; }
+        .modal-btns button {
+            padding: 10px 24px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.85em; letter-spacing: 2px;
+            cursor: pointer; border: 1px solid;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        .btn-confirm { color: var(--red); border-color: var(--red); }
+        .btn-confirm:hover { background: rgba(255,78,78,0.12); }
+        .btn-cancel { color: var(--gold-bright); border-color: rgba(255,255,255,0.2); }
+        .btn-cancel:hover { border-color: var(--gold-bright); }
+
+        /* pick modal */
+        .pick-modal {
+            background: var(--bg2);
+            border: 1px solid var(--gold-dim);
+            padding: 24px;
+            width: 96%;
+            max-width: 820px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .pick-modal h3 {
+            font-family: 'Cinzel', serif;
+            color: var(--gold);
+            letter-spacing: 3px;
+            font-size: 1em;
+            text-align: center;
+        }
+        .pick-search {
+            width: 100%;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--gold-dim);
+            color: var(--gold-bright);
+            padding: 8px 14px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1em;
+            letter-spacing: 1px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .pick-search:focus { border-color: var(--gold); }
+        .pick-search::placeholder { opacity: 0.4; }
+        .pick-filter-row {
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .pick-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            padding-right: 4px;
+            flex: 1;
+        }
+        .pick-grid::-webkit-scrollbar { width: 4px; }
+        .pick-grid::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+        .pick-card {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 5px; padding: 8px 4px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.18s;
+            position: relative;
+            text-align: center;
+        }
+        .pick-card:hover {
+            border-color: var(--gold);
+            background: rgba(200,155,60,0.1);
+            transform: translateY(-2px);
+        }
+        .pick-card.dead-card {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .pick-card img {
+            width: 64px; height: 64px;
+            border-radius: 3px;
+            border: 2px solid transparent;
+            transition: border-color 0.18s;
+        }
+        .pick-card:hover img { border-color: var(--gold); }
+        .pick-card .pick-name {
+            font-size: 0.68em;
+            letter-spacing: 0.5px;
+            text-align: center;
+            line-height: 1.2;
+            color: var(--gold-bright);
+            width: 100%;
+            display: block;
+            word-break: break-word;
+        }
+        .pick-card .pick-arch {
+            font-size: 0.6em; letter-spacing: 1px;
+            padding: 1px 5px;
+            border: 1px solid currentColor;
+        }
+        .pick-card .pick-lives {
+            display: flex; gap: 2px;
+        }
+        .pick-card .pip-sm {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--gold);
+        }
+        .pick-card .pip-sm.dead { background: rgba(255,255,255,0.1); }
+
+        /* rank cell in table */
+        .rank-cell { display: flex; flex-direction: column; gap: 3px; min-width: 90px; }
+        .champ-rank-label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.68em;
+            letter-spacing: 2px;
+            padding: 2px 6px;
+            border: 1px solid;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        .rank-progress-bar {
+            height: 3px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .rank-progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        /* table icon */
+        .champ-cell { display: flex; align-items: center; gap: 8px; }
+        .champ-thumb {
+            width: 30px; height: 30px;
+            border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.15);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        /* url save indicator */
+        .url-badge {
+            font-size: 0.7em; letter-spacing: 1px;
+            opacity: 0.45; padding: 3px 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: inline-block; margin-top: 4px;
+        }
+
+        /* responsive */
+        @media (max-width: 768px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar {
+                grid-row: auto;
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: visible;
+                border-right: none;
+                border-bottom: 1px solid var(--gold-dim);
+                padding: 12px;
+                gap: 10px;
+            }
+            .sidebar .side-box { min-width: 180px; flex-shrink: 0; }
+            .main { padding: 16px; }
+            .synergy-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.5em; letter-spacing: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="side-box">
+            <h3>Sezon</h3>
+            <div id="season-stats"></div>
+        </div>
+        <div class="side-box">
+            <h3>Streak</h3>
+            <div class="streak-display" id="streak-display">
+                <div class="streak-num" id="streak-num">—</div>
+                <div class="streak-label" id="streak-label">BRAK GIE</div>
+            </div>
+        </div>
+        <div class="side-box">
+            <h3>Klasa WR</h3>
+            <div id="arch-bars"></div>
+        </div>
+        <div class="side-box">
+            <h3>Top 3 Championy</h3>
+            <div id="top3-list"></div>
+        </div>
+        <div class="side-box">
+            <h3>Historia (ostatnie 10)</h3>
+            <div class="history-list" id="history-list"></div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+        <div class="header">
+            <h1>🏹 MARKSMAN GAUNTLET</h1>
+            <div class="subtitle">EVERY MARKSMAN. ONE SHOT.</div>
+            <span class="url-badge" id="url-badge">💾 AUTO-SAVE: OK</span>
+        </div>
+
+        <div class="result-area" id="result-area">
+            <div id="champion-wrapper" style="display:flex;flex-direction:column;align-items:center;width:100%">
+                <img id="champion-icon" src="" alt="">
+                <div class="slot-wrapper" id="slot-wrapper" style="display:none">
+                    <div class="slot-reel" id="slot-reel"></div>
+                </div>
+                <div class="champ-name" id="champ-name">GOTOWY</div>
+                <div class="arch-badge" id="arch-badge" style="display:none"></div>
+                <div class="drawn-stats" id="drawn-stats">
+                    <div class="drawn-stat">
+                        <div class="drawn-stat-val" id="ds-wins" style="color:var(--green)">—</div>
+                        <div class="drawn-stat-label">Wygrane</div>
+                    </div>
+                    <div class="drawn-stat">
+                        <div class="drawn-stat-val" id="ds-losses" style="color:var(--red)">—</div>
+                        <div class="drawn-stat-label">Przegrane</div>
+                    </div>
+                    <div class="drawn-stat">
+                        <div class="drawn-stat-val" id="ds-wr">—</div>
+                        <div class="drawn-stat-label">WR%</div>
+                    </div>
+                    <div class="drawn-stat">
+                        <div class="drawn-stat-val" id="ds-rank">—</div>
+                        <div class="drawn-stat-label">Ranga</div>
+                    </div>
+                    <div class="drawn-stat">
+                        <div class="drawn-stat-val" id="ds-lives">—</div>
+                        <div class="drawn-stat-label">Życia</div>
+                    </div>
+                </div>
+            </div>
+            <div class="action-btns" id="action-btns">
+                <button class="btn-result btn-win" onclick="handleResult('WIN')">VICTORY</button>
+                <button class="btn-result btn-mvp" onclick="handleResult('WIN', true)" title="Zwycięstwo + MVP">★ MVP</button>
+                <button class="btn-result btn-lose" onclick="handleResult('LOSE')">DEFEAT</button>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:12px">
+            <button class="btn-draw" id="btn-draw" onclick="drawChampion()" style="flex:2">LOSUJ MARKSMANA</button>
+            <button class="btn-draw" onclick="openPickModal()" style="flex:1;font-size:1em;letter-spacing:3px;border-color:var(--gold);color:var(--gold);background:rgba(200,155,60,0.06)">✦ WYBIERZ</button>
+        </div>
+
+        <div>
+            <div class="filter-row">
+                <button class="filter-btn active" onclick="setFilter('all', this)">Wszyscy</button>
+                <button class="filter-btn" onclick="setFilter('alive', this)">Żywi</button>
+                <button class="filter-btn" onclick="setFilter('marksman', this)">Marksman</button>
+                <button class="filter-btn" onclick="setFilter('mage', this)">Mage</button>
+                <button class="filter-btn" onclick="setFilter('fighter', this)">Fighter</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th onclick="sortBy('name')">Bohater <span class="sort-arrow">↕</span></th>
+                            <th onclick="sortBy('arch')">Typ <span class="sort-arrow">↕</span></th>
+                            <th onclick="sortBy('wins')">W <span class="sort-arrow">↕</span></th>
+                            <th onclick="sortBy('losses')">L <span class="sort-arrow">↕</span></th>
+                            <th onclick="sortBy('wr')">WR% <span class="sort-arrow">↕</span></th>
+                            <th onclick="sortBy('rank')">Ranga <span class="sort-arrow">↕</span></th>
+                            <th>Życia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="admin-row">
+            <button class="btn-admin" onclick="exportData()">📤 Export</button>
+            <button class="btn-admin" onclick="document.getElementById('fileInput').click()">📥 Import</button>
+            <button class="btn-admin" onclick="copyStateToURL()">🔗 Kopiuj URL</button>
+            <button class="btn-admin danger" onclick="confirmReset()">⚠ Reset Sezonu</button>
+            <input type="file" id="fileInput" accept=".json" onchange="importData(event)" style="display:none">
+        </div>
+    </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SOUND TOGGLE -->
+<button class="sound-toggle" id="sound-toggle" onclick="toggleSound()" title="Dźwięk on/off">🔊</button>
+
+<!-- CHAMPION TOOLTIP -->
+<div class="champ-tooltip" id="champ-tooltip">
+    <div class="tooltip-inner">
+        <img class="tooltip-img" id="tooltip-img" src="" alt="">
+        <div class="tooltip-body">
+            <div class="tooltip-name" id="tooltip-name"></div>
+            <div class="tooltip-row"><span>Klasa</span><span id="tooltip-arch"></span></div>
+            <div class="tooltip-row"><span>Wygrane</span><span id="tooltip-wins" style="color:var(--green)"></span></div>
+            <div class="tooltip-row"><span>Przegrane</span><span id="tooltip-losses" style="color:var(--red)"></span></div>
+            <div class="tooltip-row"><span>WR%</span><span id="tooltip-wr"></span></div>
+            <div class="tooltip-row"><span>Życia</span><span id="tooltip-lives"></span></div>
+            <div class="tooltip-row"><span>Ranga</span><span id="tooltip-rank"></span></div>
+            <div class="tooltip-rank-bar"><div class="tooltip-rank-fill" id="tooltip-rank-fill"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+        <h3 id="modal-title">POTWIERDŹ</h3>
+        <p id="modal-msg"></p>
+        <div class="modal-btns">
+            <button class="btn-confirm" id="modal-confirm">TAK, RESETUJ</button>
+            <button class="btn-cancel" onclick="closeModal()">ANULUJ</button>
+        </div>
+    </div>
+</div>
+
+<!-- PICK MODAL -->
+<div class="modal-overlay" id="pick-overlay">
+    <div class="pick-modal">
+        <h3>✦ WYBIERZ CHAMPIONA</h3>
+        <input class="pick-search" id="pick-search" type="text" placeholder="Szukaj po nazwie..." oninput="filterPickGrid()">
+        <div class="pick-filter-row">
+            <button class="filter-btn active" onclick="setPickFilter('all',this)">Wszyscy</button>
+            <button class="filter-btn" onclick="setPickFilter('marksman',this)">Marksman</button>
+            <button class="filter-btn" onclick="setPickFilter('mage',this)">Mage</button>
+            <button class="filter-btn" onclick="setPickFilter('fighter',this)">Fighter</button>
+        </div>
+        <div class="pick-grid" id="pick-grid"></div>
+        <div style="text-align:center">
+            <button class="btn-cancel" style="padding:8px 24px;font-family:'Cinzel',serif;font-size:0.8em;letter-spacing:2px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);background:transparent;color:var(--gold-bright);transition:all 0.2s" onclick="closePickModal()">ANULUJ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+const archColors = {
+    "marksman": "#f39c12",
+    "mage":     "#9b30ff",
+    "fighter":  "#e05555"
+};
+
+const rankList = [
+    { wins: 0,  label: 'IRON',        color: '#746d65' },
+    { wins: 4,  label: 'BRONZE',      color: '#8c5135' },
+    { wins: 7,  label: 'SILVER',      color: '#a5b1b3' },
+    { wins: 11, label: 'GOLD',        color: '#e2b032' },
+    { wins: 14, label: 'PLATINUM',    color: '#32cd99' },
+    { wins: 17, label: 'EMERALD',     color: '#00ff44' },
+    { wins: 20, label: 'DIAMOND',     color: '#4169e1' },
+    { wins: 24, label: 'MASTER',      color: '#9b30ff' },
+    { wins: 28, label: 'GRANDMASTER', color: '#ff4500' },
+    { wins: 31, label: 'CHALLENGER',  color: '#00ffff' }
+];
+
+function getChampRank(wins) {
+    let rank = rankList[0];
+    for (const r of rankList) {
+        if (wins >= r.wins) rank = r;
+    }
+    return rank;
+}
+
+const championData = {
+    "Jinx":         { arch:"marksman" },
+    "Ashe":         { arch:"marksman" },
+    "Lucian":       { arch:"marksman" },
+    "Seraphine":    { arch:"mage" },
+    "Brand":        { arch:"mage" },
+    "Nilah":        { arch:"fighter" },
+    "Samira":       { arch:"marksman" },
+    "Vayne":        { arch:"marksman" },
+    "Senna":        { arch:"marksman" },
+    "Caitlyn":      { arch:"marksman" },
+    "Smolder":      { arch:"marksman" },
+    "Draven":       { arch:"marksman" },
+    "Miss Fortune": { arch:"marksman" },
+    "Tristana":     { arch:"marksman" },
+    "Yunara":       { arch:"marksman" },
+    "Kog'Maw":      { arch:"marksman" },
+    "Ezreal":       { arch:"marksman" },
+    "Jhin":         { arch:"marksman" },
+    "Kalista":      { arch:"marksman" },
+    "Kai'Sa":       { arch:"marksman" },
+    "Corki":        { arch:"marksman" },
+    "Xayah":        { arch:"marksman" },
+    "Cassiopeia":   { arch:"mage" },
+    "Sivir":        { arch:"marksman" },
+    "Varus":        { arch:"marksman" },
+    "Ziggs":        { arch:"mage" },
+    "Xerath":        { arch:"mage" },
+    "Locke":        { arch:"fighter" },
+    "Mel":          { arch:"mage" }
+};
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let state = [];        // per-champion stats
+let history = [];      // game history [{champ, result, date}]
+let currentChampion = null;
+let sortCol = 'name';
+let sortAsc = true;
+let filterMode = 'all';
+let liveVersion = "16.9.1";
+
+const STORAGE_KEY = 'marksman_gauntlet_v1';
+
+// ── SAVE / LOAD ──
+function saveState() {
+    const data = { state, history };
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        document.getElementById('url-badge').textContent = '💾 AUTO-SAVE: OK';
+    } catch(e) {
+        document.getElementById('url-badge').textContent = '⚠ SAVE FAILED';
+    }
+}
+
+function loadState() {
+    // Priority: URL hash > localStorage
+    const hash = location.hash.slice(1);
+    if (hash) {
+        try {
+            const decoded = JSON.parse(atob(hash));
+            state = decoded.state || [];
+            history = decoded.history || [];
+            showToast('📥 Wczytano dane z URL!');
+            // clear hash to avoid re-loading on refresh with stale url
+            history.length && saveState();
+            return;
+        } catch(e) {}
+    }
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            state = parsed.state || [];
+            history = parsed.history || [];
+            return;
+        } catch(e) {}
+    }
+    // fresh
+    state = Object.keys(championData).map(name => ({ name, wins: 0, losses: 0, lives: 3 }));
+    history = [];
+}
+
+function copyStateToURL() {
+    const data = { state, history };
+    const encoded = btoa(JSON.stringify(data));
+    const url = location.origin + location.pathname + '#' + encoded;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('🔗 Link z zapisem skopiowany do schowka!');
+    }).catch(() => {
+        prompt('Skopiuj ten link:', url);
+    });
+}
+
+// ── EXPORT / IMPORT ──
+function exportData() {
+    const blob = new Blob([JSON.stringify({ state, history }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `gauntlet_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    showToast('📤 Wyeksportowano dane');
+}
+
+function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        try {
+            const parsed = JSON.parse(ev.target.result);
+            state = parsed.state || [];
+            history = parsed.history || [];
+            saveState();
+            renderAll();
+            showToast('📥 Import zakończony sukcesem!');
+        } catch(err) {
+            showToast('❌ Błąd importu pliku');
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+}
+
+// ══════════════════════════════════════════════
+// DRAW CHAMPION
+// ══════════════════════════════════════════════
+function getAliveChampions() {
+    return state.filter(c => c.lives > 0);
+}
+
+function getWeightedPool(alive) {
+    // Champions with fewer games played get higher weight
+    const maxGames = Math.max(...alive.map(c => c.wins + c.losses), 1);
+    return alive.map(c => {
+        const games = c.wins + c.losses;
+        const weight = Math.max(1, maxGames - games + 1);
+        return { ...c, weight };
+    });
+}
+
+function weightedRandom(pool) {
+    const total = pool.reduce((s, c) => s + c.weight, 0);
+    let r = Math.random() * total;
+    for (const c of pool) {
+        r -= c.weight;
+        if (r <= 0) return c;
+    }
+    return pool[pool.length - 1];
+}
+
+async function drawChampion() {
+    const alive = getAliveChampions();
+    if (alive.length === 0) {
+        showToast('⚠ Brak żywych championów!');
+        return;
+    }
+
+    document.getElementById('btn-draw').disabled = true;
+    document.getElementById('action-btns').style.display = 'none';
+    document.getElementById('champion-icon').style.display = 'none';
+    document.getElementById('arch-badge').style.display = 'none';
+    document.getElementById('champ-name').textContent = '';
+    hideDrawnStats();
+    playSound('draw');
+
+    const pool = getWeightedPool(alive);
+    const picked = weightedRandom(pool);
+
+    // slot machine animation
+    await runSlotMachine(alive, picked);
+
+    currentChampion = state.find(c => c.name === picked.name);
+
+    // show icon - glow uses rank color
+    const data = championData[picked.name];
+    const icon = document.getElementById('champion-icon');
+    const champRank = getChampRank(currentChampion.wins);
+    const glow = champRank.color;
+    document.documentElement.style.setProperty('--glow', glow);
+    // icon.src already set by runSlotMachine (preloaded)
+    icon.style.borderColor = glow;
+    icon.style.boxShadow = `0 0 30px ${glow}`;
+    icon.onerror = () => { icon.style.display = 'none'; };
+    icon.onload = () => { icon.style.display = 'block'; };
+    if (icon.complete && icon.naturalWidth) icon.style.display = 'block';
+
+    // arch badge + rank
+    const archBadge = document.getElementById('arch-badge');
+    archBadge.textContent = `${data.arch.toUpperCase()} · ${champRank.label}`;
+    archBadge.className = `arch-badge`;
+    archBadge.style.borderColor = glow;
+    archBadge.style.color = glow;
+    archBadge.style.display = 'inline-block';
+
+    showDrawnStats(currentChampion, champRank, glow);
+
+    document.getElementById('action-btns').style.display = 'flex';
+    document.getElementById('btn-draw').disabled = false;
+}
+
+async function runSlotMachine(pool, final) {
+    const wrapper = document.getElementById('slot-wrapper');
+    const reel = document.getElementById('slot-reel');
+    const champName = document.getElementById('champ-name');
+
+    champName.style.display = 'none';
+    wrapper.style.display = 'flex';
+    reel.innerHTML = '';
+
+    const names = pool.map(c => c.name);
+    const spinCount = 18;
+    const items = [];
+    for (let i = 0; i < spinCount - 1; i++) {
+        items.push(names[Math.floor(Math.random() * names.length)]);
+    }
+    items.push(final.name);
+
+    // preload all icons so no blank frames mid-spin
+    await Promise.all(items.map(name => new Promise(res => {
+        const img = new Image();
+        img.onload = img.onerror = res;
+        img.src = getIconUrl(name);
+    })));
+
+    items.forEach(name => {
+        const div = document.createElement('div');
+        div.className = 'slot-item';
+        const img = document.createElement('img');
+        img.src = getIconUrl(name);
+        img.alt = name;
+        img.onerror = () => {
+            img.style.display = 'none';
+            div.style.fontSize = '0.55em';
+            div.style.color = 'var(--gold)';
+            div.style.letterSpacing = '1px';
+            div.textContent = name;
+        };
+        div.appendChild(img);
+        reel.appendChild(div);
+    });
+
+    const itemH = 80;
+    // stop so the LAST item (final champion) is centred in the window –
+    // that means shift = -(spinCount - 1) * itemH  but the wrapper is also 80px,
+    // so we land exactly on the last item with no overshoot / empty space
+    const targetOffset = -(spinCount - 1) * itemH;
+
+    await new Promise(resolve => {
+        let start = null;
+        const duration = 4000;
+
+        function ease(t) {
+            if (t < 0.15) return t / 0.15 * 0.20;
+            if (t < 0.60) return 0.20 + (t - 0.15) / 0.45 * 0.58;
+            return 0.78 + (t - 0.60) / 0.40 * 0.22;
+        }
+
+        function step(ts) {
+            if (!start) start = ts;
+            const progress = Math.min((ts - start) / duration, 1);
+            reel.style.transform = `translateY(${ease(progress) * targetOffset}px)`;
+            if (progress < 1) requestAnimationFrame(step);
+            else { reel.style.transform = `translateY(${targetOffset}px)`; resolve(); }
+        }
+        requestAnimationFrame(step);
+    });
+
+    // slot is now showing the final champion – swap to the big icon seamlessly:
+    // 1. set the real champion-icon src (already in cache)
+    const icon = document.getElementById('champion-icon');
+    icon.style.display = 'none'; // keep hidden until loaded
+    icon.src = getIconUrl(final.name);
+
+    // 2. hide slot wrapper, show name
+    wrapper.style.display = 'none';
+    champName.style.display = 'block';
+    champName.textContent = final.name;
+
+    // 3. show icon once loaded (instant from cache)
+    await new Promise(res => {
+        if (icon.complete && icon.naturalWidth) { icon.style.display = 'block'; res(); }
+        else { icon.onload = () => { icon.style.display = 'block'; res(); }; icon.onerror = res; }
+    });
+}
+
+// ══════════════════════════════════════════════
+// HANDLE RESULT
+// ══════════════════════════════════════════════
+function handleResult(result, isMvp) {
+    if (!currentChampion) return;
+
+    const entry = state.find(c => c.name === currentChampion.name);
+    if (!entry) return;
+
+    if (result === 'WIN') {
+        const oldRank = getChampRank(entry.wins);
+        entry.wins++;
+        const newRank = getChampRank(entry.wins);
+        if (isMvp) entry.mvps = (entry.mvps || 0) + 1;
+        if (newRank.label !== oldRank.label) {
+            entry.lives++;
+            playSound('rankup');
+            setTimeout(() => showToast(`🏆 ${entry.name} awansował na ${newRank.label}! +1 życie ❤️`), 400);
+        } else {
+            playSound('win');
+        }
+        if (isMvp) setTimeout(() => showToast(`★ ${entry.name} zostaje MVP meczu!`), isMvp && newRank.label !== oldRank.label ? 900 : 400);
+    } else {
+        playSound('lose');
+        entry.losses++;
+        entry.lives = Math.max(0, entry.lives - 1);
+    }
+
+    history.unshift({
+        champ: entry.name,
+        result,
+        mvp: !!isMvp,
+        date: new Date().toLocaleString('pl-PL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+    });
+
+    saveState();
+    renderAll();
+
+    document.getElementById('action-btns').style.display = 'none';
+    document.getElementById('champion-icon').style.display = 'none';
+    document.getElementById('arch-badge').style.display = 'none';
+    hideDrawnStats();
+    document.getElementById('champ-name').textContent = result === 'WIN' ? (isMvp ? '★ MVP VICTORY' : '✓ VICTORY') : '✗ DEFEAT';
+    document.getElementById('champ-name').style.color = result === 'WIN' ? (isMvp ? 'var(--gold)' : 'var(--green)') : 'var(--red)';
+
+    setTimeout(() => {
+        document.getElementById('champ-name').textContent = 'GOTOWY';
+        document.getElementById('champ-name').style.color = '';
+        currentChampion = null;
+    }, 1800);
+}
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+function renderAll() {
+    renderSidebar();
+    renderTable();
+    updateRank();
+}
+
+function updateRank() {
+    const totalWins = state.reduce((s, c) => s + c.wins, 0);
+    let rank = rankList[0];
+    for (const r of rankList) {
+        if (totalWins >= r.wins) rank = r;
+    }
+    document.documentElement.style.setProperty('--rank-color', rank.color);
+}
+
+function renderSidebar() {
+    const totalW = state.reduce((s,c) => s+c.wins, 0);
+    const totalL = state.reduce((s,c) => s+c.losses, 0);
+    const totalG = totalW + totalL;
+    const alive = state.filter(c => c.lives > 0).length;
+    const wr = totalG > 0 ? ((totalW/totalG)*100).toFixed(1) : '—';
+
+    document.getElementById('season-stats').innerHTML = `
+        <div class="stat-row"><span>Gier</span><span class="stat-val">${totalG}</span></div>
+        <div class="stat-row"><span>Wygrane</span><span class="stat-val">${totalW}</span></div>
+        <div class="stat-row"><span>Przegrane</span><span class="stat-val">${totalL}</span></div>
+        <div class="stat-row"><span>WR%</span><span class="stat-val">${wr}%</span></div>
+        <div class="stat-row"><span>Żywi</span><span class="stat-val">${alive}/${state.length}</span></div>
+    `;
+
+    // streak
+    let streak = 0, streakType = null;
+    for (const h of history) {
+        if (!streakType) { streakType = h.result; streak = 1; }
+        else if (h.result === streakType) streak++;
+        else break;
+    }
+    const sNum = document.getElementById('streak-num');
+    const sLbl = document.getElementById('streak-label');
+    if (!streakType) {
+        sNum.textContent = '—'; sNum.className = 'streak-num';
+        sLbl.textContent = 'BRAK GIER';
+    } else {
+        sNum.textContent = streak;
+        sNum.className = `streak-num ${streakType === 'WIN' ? 'streak-w' : 'streak-l'}`;
+        sLbl.textContent = streakType === 'WIN' ? 'WIN STREAK 🔥' : 'LOSE STREAK 💀';
+    }
+
+    // arch bars
+    const archs = ['marksman','mage','fighter'];
+    let archHTML = '';
+    for (const a of archs) {
+        const champs = state.filter(c => championData[c.name]?.arch === a);
+        const w = champs.reduce((s,c)=>s+c.wins,0);
+        const g = champs.reduce((s,c)=>s+c.wins+c.losses,0);
+        const pct = g > 0 ? (w/g*100).toFixed(0) : 0;
+        const col = archColors[a] || 'var(--gold)';
+        archHTML += `
+            <div class="bar-row">
+                <div class="bar-label"><span style="color:${col}">${a.toUpperCase()}</span><span>${pct}% (${g}g)</span></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+            </div>`;
+    }
+    document.getElementById('arch-bars').innerHTML = archHTML;
+
+    // top3
+    const played = state.filter(c => (c.wins+c.losses) >= 2);
+    played.sort((a,b) => {
+        const wrA = a.wins/(a.wins+a.losses);
+        const wrB = b.wins/(b.wins+b.losses);
+        return wrB - wrA;
+    });
+    const medals = ['🥇','🥈','🥉'];
+    let top3HTML = '';
+    played.slice(0,3).forEach((c,i) => {
+        const wr = ((c.wins/(c.wins+c.losses))*100).toFixed(0);
+        top3HTML += `<div class="top3-item">
+            <span class="top3-medal">${medals[i]}</span>
+            <span>${c.name}</span>
+            <span class="top3-wr">${wr}%</span>
+        </div>`;
+    });
+    document.getElementById('top3-list').innerHTML = top3HTML || '<div style="opacity:0.4;font-size:0.8em">Min. 2 gry per champion</div>';
+
+    // history
+    let histHTML = '';
+    history.slice(0,10).forEach(h => {
+        histHTML += `<div class="hist-item ${h.result==='WIN'?'w':'l'}">
+            <span>${h.champ}</span>
+            <span>${h.result==='WIN'?'✓':'✗'}</span>
+            <span class="hist-date">${h.date}</span>
+        </div>`;
+    });
+    document.getElementById('history-list').innerHTML = histHTML || '<div style="opacity:0.4;font-size:0.8em">Brak historii</div>';
+}
+
+function renderTable() {
+    let data = [...state];
+
+    // filter
+    if (filterMode === 'alive') data = data.filter(c => c.lives > 0);
+    else if (['marksman','mage','fighter'].includes(filterMode)) {
+        data = data.filter(c => championData[c.name]?.arch === filterMode);
+    }
+
+    // sort
+    data.sort((a, b) => {
+        let va, vb;
+        if (sortCol === 'name') { va = a.name; vb = b.name; return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va); }
+        if (sortCol === 'arch') { va = championData[a.name]?.arch||''; vb = championData[b.name]?.arch||''; return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va); }
+        if (sortCol === 'wins')   { va = a.wins;   vb = b.wins; }
+        if (sortCol === 'losses') { va = a.losses; vb = b.losses; }
+        if (sortCol === 'rank')   { va = a.wins;   vb = b.wins; }
+        if (sortCol === 'wr') {
+            const ga = a.wins+a.losses, gb = b.wins+b.losses;
+            va = ga>0 ? a.wins/ga : -1;
+            vb = gb>0 ? b.wins/gb : -1;
+        }
+        return sortAsc ? va-vb : vb-va;
+    });
+
+    const tbody = document.getElementById('stats-body');
+    tbody.innerHTML = '';
+    data.forEach((c, i) => {
+        const d = championData[c.name];
+        const games = c.wins + c.losses;
+        const wr = games > 0 ? ((c.wins/games)*100).toFixed(0) : '—';
+        const wrPct = games > 0 ? (c.wins/games*100) : 0;
+        const dead = c.lives === 0;
+
+        const tr = document.createElement('tr');
+        if (dead) tr.classList.add('eliminated');
+
+        const pipsHTML = [0,1,2].map(i =>
+            `<div class="pip ${i >= c.lives ? 'dead' : ''}"></div>`
+        ).join('');
+
+        const archColor = archColors[d?.arch] || 'var(--gold)';
+        const champRank = getChampRank(c.wins);
+        const nextRank = rankList.find(r => r.wins > c.wins);
+        const progressToNext = nextRank
+            ? ((c.wins - getChampRank(c.wins).wins) / (nextRank.wins - getChampRank(c.wins).wins) * 100).toFixed(0)
+            : 100;
+
+        tr.innerHTML = `
+            <td><div class="champ-cell"><img class="champ-thumb" src="${getIconUrl(c.name)}" alt="" onerror="this.style.display='none'" style="border-color:${champRank.color};box-shadow:0 0 6px ${champRank.color}44"><span>${c.name}</span>${c.mvps ? `<span class="mvp-star" title="${c.mvps}× MVP">★${c.mvps>1?` ×${c.mvps}`:''}</span>` : ''}</div></td>
+            <td><span class="arch-tag" style="color:${archColor};border-color:${archColor}">${d?.arch||'?'}</span></td>
+            <td style="color:var(--green)">${c.wins}</td>
+            <td style="color:var(--red)">${c.losses}</td>
+            <td>
+                <div class="wr-bar-cell">
+                    <span>${wr}${games>0?'%':''}</span>
+                    <div class="wr-mini"><div class="wr-mini-fill" style="width:${wrPct}%"></div></div>
+                </div>
+            </td>
+            <td>
+                <div class="rank-cell">
+                    <span class="champ-rank-label" style="color:${champRank.color};border-color:${champRank.color}">${champRank.label}</span>
+                    ${nextRank ? `<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:${progressToNext}%;background:${champRank.color}"></div></div>` : ''}
+                </div>
+            </td>
+            <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <div class="lives-pips">${pipsHTML}</div>
+                    <button onclick="adjustLives('${c.name}', 1)" style="padding:1px 6px;font-size:0.75em;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);line-height:1.4" title="+1 życie">+</button>
+                    <button onclick="adjustLives('${c.name}', -1)" style="padding:1px 6px;font-size:0.75em;cursor:pointer;border:1px solid var(--red);background:transparent;color:var(--red);line-height:1.4" title="-1 życie">−</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        tr.addEventListener('mouseenter', e => showTooltip(c.name, e));
+        tr.addEventListener('mouseleave', hideTooltip);
+    });
+}
+
+function setFilter(mode, btn) {
+    filterMode = mode;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+}
+
+function sortBy(col) {
+    if (sortCol === col) sortAsc = !sortAsc;
+    else { sortCol = col; sortAsc = true; }
+    // update header arrows
+    document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+    const headers = ['name','arch','wins','losses','wr','rank','lives'];
+    const idx = headers.indexOf(col);
+    if (idx >= 0) document.querySelectorAll('thead th')[idx]?.classList.add('sorted');
+    renderTable();
+}
+
+// ══════════════════════════════════════════════
+// RESET
+// ══════════════════════════════════════════════
+function confirmReset() {
+    showModal(
+        'RESET SEZONU',
+        'Wszystkie statystyki i historia zostaną usunięte. Tej akcji nie można cofnąć.',
+        () => {
+            state = Object.keys(championData).map(name => ({ name, wins: 0, losses: 0, lives: 3 }));
+            history = [];
+            currentChampion = null;
+            saveState();
+            renderAll();
+            document.getElementById('champ-name').textContent = 'GOTOWY';
+            document.getElementById('champ-name').style.color = '';
+            hideDrawnStats();
+            showToast('🔄 Sezon zresetowany');
+        }
+    );
+}
+
+function adjustLives(name, delta) {
+    const entry = state.find(c => c.name === name);
+    if (!entry) return;
+    entry.lives = Math.max(0, entry.lives + delta);
+    saveState();
+    renderAll();
+    showToast(`${delta > 0 ? '❤️ +1' : '💀 -1'} życie: ${name} (${entry.lives})`);
+}
+
+// ══════════════════════════════════════════════
+// TOOLTIP
+// ══════════════════════════════════════════════
+let tooltipTimeout = null;
+const tooltip = document.getElementById('champ-tooltip');
+
+function showTooltip(name, event) {
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = setTimeout(() => {
+        const c = state.find(s => s.name === name);
+        if (!c) return;
+        const d = championData[name];
+        const rank = getChampRank(c.wins);
+        const nextRank = rankList.find(r => r.wins > c.wins);
+        const games = c.wins + c.losses;
+        const wr = games > 0 ? (c.wins / games * 100).toFixed(1) + '%' : '—';
+        const pct = nextRank
+            ? ((c.wins - rank.wins) / (nextRank.wins - rank.wins) * 100).toFixed(0)
+            : 100;
+
+        document.getElementById('tooltip-img').src = getIconUrl(name);
+        document.getElementById('tooltip-name').textContent = name;
+        document.getElementById('tooltip-arch').textContent = d?.arch?.toUpperCase() || '?';
+        document.getElementById('tooltip-arch').style.color = archColors[d?.arch] || 'var(--gold)';
+        document.getElementById('tooltip-wins').textContent = c.wins;
+        document.getElementById('tooltip-losses').textContent = c.losses;
+        document.getElementById('tooltip-wr').textContent = wr;
+        document.getElementById('tooltip-lives').textContent = '❤️'.repeat(Math.min(c.lives, 8)) + (c.lives > 8 ? ` +${c.lives-8}` : '');
+        document.getElementById('tooltip-rank').textContent = rank.label;
+        document.getElementById('tooltip-rank').style.color = rank.color;
+        const fill = document.getElementById('tooltip-rank-fill');
+        fill.style.width = pct + '%';
+        fill.style.background = rank.color;
+
+        positionTooltip(event);
+        tooltip.classList.add('visible');
+    }, 120);
+}
+
+function hideTooltip() {
+    clearTimeout(tooltipTimeout);
+    tooltip.classList.remove('visible');
+}
+
+function positionTooltip(event) {
+    const tw = 200, th = 280;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let x = event.clientX + 14;
+    let y = event.clientY - 20;
+    if (x + tw > vw - 10) x = event.clientX - tw - 14;
+    if (y + th > vh - 10) y = vh - th - 10;
+    if (y < 10) y = 10;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+}
+
+document.addEventListener('mousemove', e => {
+    if (tooltip.classList.contains('visible')) positionTooltip(e);
+});
+
+// ══════════════════════════════════════════════
+// SOUND
+// ══════════════════════════════════════════════
+let soundEnabled = true;
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    return audioCtx;
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    const btn = document.getElementById('sound-toggle');
+    btn.textContent = soundEnabled ? '🔊' : '🔇';
+    btn.classList.toggle('muted', !soundEnabled);
+}
+
+function playSound(type) {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        if (type === 'win') {
+            // uplifting fanfare: 3 rising notes
+            const notes = [523, 659, 784]; // C5 E5 G5
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                const t = ctx.currentTime + i * 0.13;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.18, t + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+                osc.start(t); osc.stop(t + 0.35);
+            });
+            // extra shimmer
+            const osc2 = ctx.createOscillator();
+            const g2 = ctx.createGain();
+            osc2.connect(g2); g2.connect(ctx.destination);
+            osc2.type = 'triangle';
+            osc2.frequency.value = 1568;
+            const t2 = ctx.currentTime + 0.38;
+            g2.gain.setValueAtTime(0.1, t2);
+            g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.4);
+            osc2.start(t2); osc2.stop(t2 + 0.4);
+
+        } else if (type === 'lose') {
+            // descending sad notes
+            const notes = [392, 330, 262]; // G4 E4 C4
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'sawtooth';
+                const t = ctx.currentTime + i * 0.18;
+                osc.frequency.setValueAtTime(freq, t);
+                osc.frequency.linearRampToValueAtTime(freq * 0.92, t + 0.25);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                osc.start(t); osc.stop(t + 0.3);
+            });
+
+        } else if (type === 'rankup') {
+            // majestic ascending arpeggio
+            const notes = [523, 659, 784, 1047];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                const t = ctx.currentTime + i * 0.1;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.22, t + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                osc.start(t); osc.stop(t + 0.5);
+            });
+
+        } else if (type === 'draw') {
+            // quick whoosh/click
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+            osc.start(); osc.stop(ctx.currentTime + 0.2);
+        }
+    } catch(e) {}
+}
+
+// ══════════════════════════════════════════════
+// UI UTILS
+// ══════════════════════════════════════════════
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+let modalCallback = null;
+function showModal(title, msg, onConfirm) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-msg').textContent = msg;
+    modalCallback = onConfirm;
+    document.getElementById('modal-confirm').onclick = () => { closeModal(); onConfirm(); };
+    document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════
+// PICK MODAL
+// ══════════════════════════════════════════════
+let pickFilter = 'all';
+
+function getRiotName(name) {
+    let r = name.replace(/[\s'.]/g, '');
+    if (name === "Kai'Sa")      r = "Kaisa";
+    if (name === "Kog'Maw")     r = "KogMaw";
+    if (name === "Miss Fortune") r = "MissFortune";
+    if (name === "Yunara")      r = "Yunara";
+    return r;
+}
+
+function getIconUrl(name) {
+    return `https://ddragon.leagueoflegends.com/cdn/${liveVersion}/img/champion/${getRiotName(name)}.png`;
+}
+
+function openPickModal() {
+    pickFilter = 'all';
+    document.querySelectorAll('#pick-overlay .filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('#pick-overlay .filter-btn').classList.add('active');
+    document.getElementById('pick-search').value = '';
+    buildPickGrid();
+    document.getElementById('pick-overlay').classList.add('open');
+}
+
+function closePickModal() {
+    document.getElementById('pick-overlay').classList.remove('open');
+}
+
+function setPickFilter(mode, btn) {
+    pickFilter = mode;
+    document.querySelectorAll('#pick-overlay .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildPickGrid();
+}
+
+function filterPickGrid() {
+    buildPickGrid();
+}
+
+function buildPickGrid() {
+    const query = document.getElementById('pick-search').value.toLowerCase();
+    const grid = document.getElementById('pick-grid');
+    grid.innerHTML = '';
+
+    let pool = [...state];
+    if (pickFilter !== 'all') pool = pool.filter(c => championData[c.name]?.arch === pickFilter);
+    if (query) pool = pool.filter(c => c.name.toLowerCase().includes(query));
+    pool.sort((a,b) => a.name.localeCompare(b.name));
+
+    pool.forEach(c => {
+        const d = championData[c.name];
+        const dead = c.lives === 0;
+        const archColor = d?.arch === 'engage' ? 'var(--red)' : d?.arch === 'peel' ? 'var(--blue)' : 'var(--green)';
+        const pipsHTML = [0,1,2].map(i =>
+            `<div class="pip-sm ${i >= c.lives ? 'dead' : ''}"></div>`
+        ).join('');
+
+        const card = document.createElement('div');
+        card.className = `pick-card${dead ? ' dead-card' : ''}`;
+        card.innerHTML = `
+            <img src="${getIconUrl(c.name)}" alt="${c.name}" onerror="this.style.display='none'" style="border:2px solid ${archColors[d?.arch]||'#888'}">
+            <div class="pick-name">${c.name}</div>
+            <div class="pick-arch" style="color:${archColor};border:1px solid ${archColor};font-size:0.6em;letter-spacing:1px;padding:1px 5px">${d?.arch||'?'}</div>
+            <div class="pick-lives">${pipsHTML}</div>
+        `;
+        if (!dead) {
+            card.onclick = () => {
+                closePickModal();
+                pickChampion(c.name);
+            };
+        }
+        grid.appendChild(card);
+    });
+
+    if (pool.length === 0) {
+        grid.innerHTML = '<div style="opacity:0.4;font-size:0.85em;grid-column:1/-1;text-align:center;padding:20px">Brak wyników</div>';
+    }
+}
+
+async function pickChampion(name) {
+    const entry = state.find(c => c.name === name);
+    if (!entry) return;
+
+    document.getElementById('btn-draw').disabled = true;
+    document.getElementById('action-btns').style.display = 'none';
+    document.getElementById('champion-icon').style.display = 'none';
+    document.getElementById('arch-badge').style.display = 'none';
+    document.getElementById('slot-wrapper').style.display = 'none';
+
+    currentChampion = entry;
+    const data = championData[name];
+
+    document.getElementById('champ-name').style.display = 'block';
+    document.getElementById('champ-name').textContent = name;
+    document.getElementById('champ-name').style.color = '';
+
+    // icon - glow uses rank color
+    const champRank = getChampRank(currentChampion.wins);
+    const glow = champRank.color;
+    document.documentElement.style.setProperty('--glow', glow);
+    const icon = document.getElementById('champion-icon');
+    icon.src = getIconUrl(name);
+    icon.style.borderColor = glow;
+    icon.style.boxShadow = `0 0 30px ${glow}`;
+    icon.onerror = () => { icon.style.display = 'none'; };
+    icon.onload = () => { icon.style.display = 'block'; };
+
+    // arch badge + rank
+    const archBadge = document.getElementById('arch-badge');
+    archBadge.textContent = `${data.arch.toUpperCase()} · ${champRank.label}`;
+    archBadge.className = `arch-badge`;
+    archBadge.style.borderColor = glow;
+    archBadge.style.color = glow;
+    archBadge.style.display = 'inline-block';
+
+    showDrawnStats(currentChampion, champRank, glow);
+
+    document.getElementById('action-btns').style.display = 'flex';
+    document.getElementById('btn-draw').disabled = false;
+}
+
+// ══════════════════════════════════════════════
+// DRAWN STATS
+// ══════════════════════════════════════════════
+function showDrawnStats(champ, champRank, glow) {
+    const games = champ.wins + champ.losses;
+    const wr = games > 0 ? (champ.wins / games * 100).toFixed(1) + '%' : '—';
+    const livesStr = '❤️'.repeat(Math.min(champ.lives, 8)) + (champ.lives > 8 ? ` +${champ.lives - 8}` : '');
+
+    document.getElementById('ds-wins').textContent = champ.wins;
+    document.getElementById('ds-losses').textContent = champ.losses;
+    document.getElementById('ds-wr').textContent = wr;
+    document.getElementById('ds-wr').style.color = games > 0 ? (champ.wins / games >= 0.5 ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
+    document.getElementById('ds-rank').textContent = champRank.label;
+    document.getElementById('ds-rank').style.color = glow;
+    document.getElementById('ds-lives').textContent = livesStr || '💀';
+    document.getElementById('drawn-stats').style.display = 'flex';
+}
+
+function hideDrawnStats() {
+    document.getElementById('drawn-stats').style.display = 'none';
+}
+
+
+// ══════════════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+function initParticles() {
+    particles = [];
+    for (let i = 0; i < 70; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            speed: 0.15 + Math.random() * 0.35,
+            size: 1 + Math.random() * 1.5,
+            drift: (Math.random() - 0.5) * 0.3,
+            opacity: 0.2 + Math.random() * 0.4
+        });
+    }
+}
+
+function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--rank-color').trim() || '#c89b3c';
+    particles.forEach(p => {
+        p.y -= p.speed;
+        p.x += p.drift;
+        if (p.y < 0) { p.y = canvas.height; p.x = Math.random() * canvas.width; }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = p.opacity;
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(animateParticles);
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+async function init() {
+    resizeCanvas();
+    window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
+    initParticles();
+    animateParticles();
+
+    // fetch latest patch version
+    try {
+        const res = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+        const v = await res.json();
+        liveVersion = v[0];
+    } catch(e) {}
+
+    loadState();
+    renderAll();
+}
+
+init();
+</script>
+</body>
+</html>

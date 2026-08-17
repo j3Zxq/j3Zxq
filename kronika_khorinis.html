@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+  requireAuth(); // blokuje render, jeśli brak sesji
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KRONIKA KHORINIS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0e0c08;
+  --bg2:       #161209;
+  --bg3:       #1e1810;
+  --parchment: #c8a96e;
+  --parchment2:#e8c98a;
+  --ink:       #f0e8d0;
+  --ink-dim:   rgba(240,232,208,0.45);
+  --blood:     #8b1a1a;
+  --blood2:    #c42a2a;
+  --gold:      #c8923c;
+  --gold2:     #f0b850;
+  --stone:     rgba(255,255,255,0.06);
+  --stone2:    rgba(255,255,255,0.11);
+  --border:    rgba(200,169,110,0.18);
+  --border2:   rgba(200,169,110,0.35);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.25); border-radius: 2px; }
+
+body {
+  font-family: 'Crimson Text', serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* stone texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.015) 3px, rgba(0,0,0,0.015) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0,0,0,0.01) 3px, rgba(0,0,0,0.01) 4px);
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ── HEADER ── */
+.header {
+  position: relative;
+  text-align: center;
+  padding: 40px 24px 28px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(139,26,26,0.08) 0%, transparent 100%);
+  overflow: hidden;
+}
+.header::before, .header::after {
+  content: '✦';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2em;
+  color: var(--parchment);
+  opacity: 0.3;
+}
+.header::before { left: 32px; }
+.header::after  { right: 32px; }
+
+.header-eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62em;
+  letter-spacing: 6px;
+  color: var(--parchment);
+  opacity: 0.6;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.header-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.8em, 5vw, 3.2em);
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--parchment2);
+  text-shadow: 0 0 40px rgba(200,169,110,0.3), 0 2px 4px rgba(0,0,0,0.8);
+  line-height: 1;
+}
+.header-title span { color: var(--blood2); }
+.header-sub {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 0.88em;
+  color: var(--ink-dim);
+  margin-top: 8px;
+  letter-spacing: 1px;
+}
+.header-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+.header-divider-line {
+  flex: 1;
+  max-width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--parchment), transparent);
+  opacity: 0.3;
+}
+.header-divider-icon { color: var(--parchment); opacity: 0.4; font-size: 0.9em; }
+
+/* ── NAV ── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 48px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab {
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  color: var(--ink-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 0.7em;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+.nav-tab:hover { color: var(--parchment); }
+.nav-tab.active { color: var(--parchment2); border-bottom-color: var(--gold); }
+.nav-actions { display: flex; gap: 8px; align-items: center; }
+.btn {
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--ink-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 0.65em;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:hover { color: var(--parchment); border-color: var(--parchment); }
+.btn-primary {
+  background: var(--blood);
+  color: var(--parchment2);
+  border-color: var(--blood);
+}
+.btn-primary:hover { background: var(--blood2); border-color: var(--blood2); color: #fff; }
+
+/* ── VIEWS ── */
+.view { display: none; padding: 28px 24px; max-width: 1200px; margin: 0 auto; }
+.view.active { display: block; }
+
+/* ── MISSION LIST ── */
+.missions-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  align-items: start;
+}
+
+.section-heading {
+  font-family: 'Cinzel', serif;
+  font-size: 0.68em;
+  letter-spacing: 4px;
+  color: var(--parchment);
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border2), transparent);
+}
+
+/* mission card */
+.mission-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+}
+.mission-card:hover { border-color: var(--border2); background: var(--bg3); }
+.mission-card.done {
+  opacity: 0.5;
+}
+.mission-card.done .mission-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--blood);
+}
+.mission-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.mission-card.prio-high::before  { background: var(--blood2); }
+.mission-card.prio-mid::before   { background: var(--gold); }
+.mission-card.prio-low::before   { background: var(--ink-dim); }
+.mission-card.done::before       { background: var(--stone2); }
+
+.mission-status-icon {
+  font-size: 1.1em;
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.mission-status-icon:hover {
+  border-color: var(--gold);
+  background: rgba(200,146,60,0.1);
+}
+.mission-name {
+  font-family: 'IM Fell English', serif;
+  font-size: 1.05em;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.mission-meta {
+  font-size: 0.75em;
+  color: var(--ink-dim);
+  margin-top: 3px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mission-tag {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62em;
+  letter-spacing: 1.5px;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+}
+.tag-gildia    { color: var(--gold); }
+.tag-glowna    { color: var(--blood2); }
+.tag-poboczna  { color: #7a9e7e; }
+.tag-inne      { color: var(--ink-dim); }
+
+.mission-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+.mission-card:hover .mission-actions { opacity: 1; }
+.btn-icon {
+  width: 26px; height: 26px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-dim);
+  font-size: 0.78em;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.btn-icon:hover { border-color: var(--parchment); color: var(--parchment); }
+
+/* ── SIDEBAR ── */
+.stat-stone {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.stat-stone-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62em;
+  letter-spacing: 3px;
+  color: var(--parchment);
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.stat-big {
+  font-family: 'Cinzel', serif;
+  font-size: 2.4em;
+  font-weight: 900;
+  color: var(--parchment2);
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.stat-big-label {
+  font-size: 0.7em;
+  color: var(--ink-dim);
+  margin-top: 3px;
+  letter-spacing: 1px;
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--stone);
+  font-size: 0.82em;
+  gap: 8px;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-row-label { color: var(--ink-dim); }
+.stat-row-val {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9em;
+  color: var(--parchment);
+}
+.progress-stone {
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blood), var(--gold));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+
+/* ── EMPTY STATE ── */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-dim);
+}
+.empty-icon { font-size: 2.5em; margin-bottom: 12px; opacity: 0.3; }
+.empty-text {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 0.95em;
+}
+
+/* ── MODAL ── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.88);
+  z-index: 800;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s;
+}
+.overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  width: 96%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: mIn 0.22s ease;
+  position: relative;
+}
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--blood), var(--gold), var(--blood));
+}
+@keyframes mIn { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.82em;
+  letter-spacing: 3px;
+  color: var(--parchment2);
+  text-transform: uppercase;
+}
+.modal-x {
+  background: transparent; border: none;
+  color: var(--ink-dim); font-size: 1.1em;
+  cursor: pointer; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.2s;
+}
+.modal-x:hover { color: var(--parchment); }
+.modal-bd { padding: 20px; overflow-y: auto; flex: 1; }
+.modal-ft {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px;
+  flex-shrink: 0;
+}
+
+.fg { margin-bottom: 14px; }
+.fl {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6em;
+  letter-spacing: 2.5px;
+  color: var(--parchment);
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 5px;
+}
+.fi, .fs, .fta {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border2);
+  color: var(--ink);
+  padding: 8px 12px;
+  font-family: 'Crimson Text', serif;
+  font-size: 1em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.fi:focus, .fs:focus, .fta:focus { border-color: var(--gold); }
+.fi::placeholder { color: var(--ink-dim); }
+.fs option { background: var(--bg2); }
+.fta { resize: vertical; min-height: 80px; }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* toast */
+.toast {
+  position: fixed; bottom: 18px; right: 18px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  padding: 9px 16px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.72em;
+  letter-spacing: 1px;
+  z-index: 9999;
+  transform: translateY(50px); opacity: 0;
+  transition: all 0.25s cubic-bezier(.4,0,.2,1);
+  color: var(--parchment);
+}
+.toast.show { transform: none; opacity: 1; }
+
+/* filter bar */
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-pill {
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 0.62em;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.filter-pill:hover { border-color: var(--border2); color: var(--parchment); }
+.filter-pill.active { border-color: var(--gold); color: var(--parchment2); background: rgba(200,146,60,0.08); }
+.search-field {
+  flex: 1;
+  min-width: 160px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 5px 10px;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.9em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-field:focus { border-color: var(--gold); }
+.search-field::placeholder { color: var(--ink-dim); }
+
+
+/* ── GAME TABS ── */
+.game-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.game-tab {
+  padding: 12px 22px;
+  background: transparent;
+  border: none;
+  color: var(--ink-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 0.72em;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.game-tab:hover { color: var(--parchment); }
+.game-tab.active { color: var(--parchment2); border-bottom-color: var(--blood2); background: rgba(139,26,26,0.06); }
+
+/* ── GUILD SELECTOR ── */
+.guild-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.guild-bar-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62em;
+  letter-spacing: 2px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.guild-pill {
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 0.6em;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.guild-pill:hover { border-color: var(--border2); color: var(--parchment); }
+.guild-pill.active {
+  border-color: var(--gold);
+  color: var(--parchment2);
+  background: rgba(200,146,60,0.1);
+}
+.guild-pill.none-pill.active {
+  border-color: var(--ink-dim);
+  color: var(--ink);
+  background: rgba(255,255,255,0.05);
+}
+
+/* guild badge on mission */
+.guild-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58em;
+  letter-spacing: 1px;
+  padding: 1px 6px;
+  border: 1px solid var(--border2);
+  color: var(--parchment);
+  opacity: 0.8;
+}
+
+.guild-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.guild-check-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Cinzel', serif;
+  font-size: 0.72em;
+  letter-spacing: 0.5px;
+  color: var(--ink-dim);
+}
+.guild-check-pill:hover { border-color: var(--parchment); }
+.guild-check-pill.checked {
+  border-color: var(--gold);
+  color: var(--parchment2);
+  background: rgba(200,146,60,0.1);
+}
+.guild-check-pill input { accent-color: var(--gold); cursor: pointer; }
+
+@media(max-width:800px){
+  .missions-layout { grid-template-columns: 1fr; }
+  .header-title { font-size: 1.8em; }
+  .view { padding: 16px 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-eyebrow">Dziennik Poszukiwacza Przygód</div>
+  <div class="header-title">KRONIKA <span>KHORINIS</span></div>
+  <div class="header-sub">„Każda misja to krok bliżej wolności"</div>
+  <div class="header-divider">
+    <div class="header-divider-line"></div>
+    <div class="header-divider-icon">⚔</div>
+    <div class="header-divider-line"></div>
+  </div>
+</div>
+
+
+<!-- GAME TABS -->
+<div class="game-tabs" id="game-tabs">
+  <button class="game-tab active" data-game="g1" onclick="switchGame('g1',this)">⚔ Gothic I</button>
+  <button class="game-tab" data-game="g2" onclick="switchGame('g2',this)">⚔ Gothic II</button>
+  <button class="game-tab" data-game="g1r" onclick="switchGame('g1r',this)">✦ Gothic I Remake</button>
+  <button class="game-tab" data-game="km" onclick="switchGame('km',this)">📜 Kroniki Myrtany</button>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('missions',this)">⚔ Misje</button>
+    <button class="nav-tab" onclick="switchTab('stats',this)">📜 Kronika</button>
+  </div>
+  <div class="nav-actions">
+    <button class="btn btn-primary" onclick="openAdd()">+ Zapisz misję</button>
+  </div>
+</nav>
+
+<!-- MISJE -->
+<div class="view active" id="view-missions">
+  <div class="missions-layout">
+    <div>
+      <div class="guild-bar" id="guild-bar"></div>
+      <div class="filter-bar">
+        <input class="search-field" id="search-inp" placeholder="🔍 Szukaj misji…" oninput="renderMissions()">
+        <button class="filter-pill active" data-filter="all" onclick="setFilter('all',this)">Wszystkie</button>
+        <button class="filter-pill" data-filter="glowna" onclick="setFilter('glowna',this)">Główne</button>
+        <button class="filter-pill" data-filter="poboczna" onclick="setFilter('poboczna',this)">Poboczne</button>
+        <button class="filter-pill" data-filter="done" onclick="setFilter('done',this)">Ukończone</button>
+      </div>
+      <div id="missions-list"></div>
+    </div>
+    <div id="sidebar"></div>
+  </div>
+</div>
+
+<!-- KRONIKA / STATS -->
+<div class="view" id="view-stats">
+  <div id="stats-content"></div>
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="overlay" id="ov-preview">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hd">
+      <div class="modal-title" id="preview-title">Podgląd misji</div>
+      <button class="modal-x" onclick="closePreview()">✕</button>
+    </div>
+    <div class="modal-bd" id="preview-body"></div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closePreview()">Zamknij</button>
+      <button class="btn" id="preview-edit-btn" onclick="editFromPreview()">✏ Edytuj</button>
+      <button class="btn btn-primary" id="preview-done-btn" onclick="toggleDoneFromPreview()">Oznacz jako wykonaną</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="ov-mission">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="modal-title">Zapisz misję</div>
+      <button class="modal-x" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fg"><label class="fl">Nazwa misji</label><input class="fi" id="m-name" placeholder="np. Skradziony miecz Korga…"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Typ</label>
+          <select class="fs" id="m-type">
+            <option value="glowna">⚔ Główna</option>
+            <option value="poboczna" selected>📜 Poboczna</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Priorytet</label>
+          <select class="fs" id="m-prio">
+            <option value="high">🔴 Pilne</option>
+            <option value="mid" selected>🟡 Normalne</option>
+            <option value="low">⬜ Kiedyś</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg" id="guild-field"><label class="fl">Gildia (zaznacz jedną lub więcej)</label><div class="guild-checks" id="guild-checks"></div></div>
+        <div class="fg"><label class="fl">Rozdział</label>
+          <select class="fs" id="m-chapter">
+            <option value="">— Dowolny —</option>
+            <option value="1">Rozdział 1</option>
+            <option value="2">Rozdział 2</option>
+            <option value="3">Rozdział 3</option>
+            <option value="4">Rozdział 4</option>
+            <option value="5">Rozdział 5</option>
+            <option value="6">Rozdział 6</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Lokacja (opcjonalnie)</label><input class="fi" id="m-location" placeholder="np. Obóz Górników, Stare Miasto…"></div>
+      <div class="fg"><label class="fl">Notatki</label><textarea class="fta" id="m-notes" placeholder="Szczegóły misji, wskazówki, nagroda…"></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" id="del-btn" style="color:var(--blood2);border-color:rgba(196,42,42,0.3);display:none" onclick="deleteMission()">Usuń</button>
+      <button class="btn" onclick="closeModal()">Anuluj</button>
+      <button class="btn btn-primary" onclick="confirmMission()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SK = 'kronika_khorinis_v2';
+
+const GAMES = {
+  g1:  { name: 'Gothic I',              guilds: ['Stary Obóz','Nowy Obóz','Bractwo Śniącego'] },
+  g2:  { name: 'Gothic II',             guilds: ['Straż Miejska','Paladyn','Najemnik','Łowca Smoków','Nowicjusz','Mag Ognia'] },
+  g1r: { name: 'Gothic I Remake',       guilds: ['Stary Obóz','Nowy Obóz','Bractwo Śniącego'] },
+  km:  { name: 'Kroniki Myrtany',       guilds: ['Straż Miejska','Gildia Kupiecka'] }
+};
+
+const GUILD_COLORS = {
+  'Stary Obóz':       '#c43a3a',
+  'Nowy Obóz':        '#3a7ac4',
+  'Bractwo Śniącego': '#1e6b3a',
+  'Straż Miejska':    '#c43a3a',
+  'Paladyn':          '#b8b8c4',
+  'Najemnik':         '#3a7ac4',
+  'Łowca Smoków':     '#8a5a2e',
+  'Nowicjusz':        '#c43a3a',
+  'Mag Ognia':        '#8b1a1a',
+  'Gildia Kupiecka':  '#3a7ac4'
+};
+function guildColor(g){ return GUILD_COLORS[g] || 'var(--gold)'; }
+
+let state = { missions: [], activeGuild: { g1:'', g2:'', g1r:'', km:'' } };
+// mission: {id, game, name, type, prio, guild, location, notes, done, created}
+
+let currentGame = 'g1';
+// mission: {id, name, type, prio, location, notes, done, created}
+
+let editId = null;
+let activeFilter = 'all';
+
+function save(){ localStorage.setItem(SK, JSON.stringify(state)); }
+function load(){
+  const s = localStorage.getItem(SK);
+  if(s){ try{
+    const p=JSON.parse(s);
+    if(p&&Array.isArray(p.missions)) state.missions=p.missions;
+    if(p&&p.activeGuild) state.activeGuild=p.activeGuild;
+  }catch(e){} }
+}
+
+function renderAll(){ renderMissions(); renderSidebar(); renderStats(); }
+
+function getFiltered(){
+  const q = document.getElementById('search-inp').value.toLowerCase();
+  let m = [...state.missions].filter(x => x.game === currentGame);
+  const activeGuild = state.activeGuild[currentGame]||'';
+  if(activeGuild) m = m.filter(x => {
+    const guilds = Array.isArray(x.guilds) ? x.guilds : (x.guild ? [x.guild] : []);
+    return guilds.length === 0 || guilds.includes(activeGuild);
+  });
+  if(q) m = m.filter(x => x.name.toLowerCase().includes(q) || (x.notes||'').toLowerCase().includes(q) || (x.location||'').toLowerCase().includes(q));
+  if(activeFilter === 'done')      m = m.filter(x => x.done);
+  else if(activeFilter !== 'all')  m = m.filter(x => x.type === activeFilter && !x.done);
+  // "all" – aktywne + ukończone na dole
+  const prioOrd = {high:0,mid:1,low:2};
+  m.sort((a,b)=>{
+    if(a.done !== b.done) return a.done ? 1 : -1;
+    return (prioOrd[a.prio]||1)-(prioOrd[b.prio]||1) || b.created-a.created;
+  });
+  return m;
+}
+
+const typeLabel = { glowna:'Główna', gildia:'Gildia', poboczna:'Poboczna', inne:'Inne' };
+const typeClass  = { glowna:'tag-glowna', gildia:'tag-gildia', poboczna:'tag-poboczna', inne:'tag-inne' };
+const prioIcon   = { high:'🔴', mid:'🟡', low:'⬜' };
+
+function renderMissions(){
+  const el = document.getElementById('missions-list');
+  const missions = getFiltered();
+
+  if(!missions.length){
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📜</div><div class="empty-text">${activeFilter==='done'?'Nie ukończyłeś jeszcze żadnej misji.':'Brak aktywnych misji. Czas ruszać na poszukiwania.'}</div></div>`;
+    renderSidebar();
+    return;
+  }
+
+  el.innerHTML = missions.map(m=>`
+    <div class="mission-card prio-${m.prio}${m.done?' done':''}" onclick="openPreview('${m.id}')">
+      <button class="mission-status-icon" onclick="event.stopPropagation();toggleDone('${m.id}')" title="${m.done?'Cofnij ukończenie':'Oznacz jako wykonaną'}">${m.done ? '✔' : prioIcon[m.prio]||'·'}</button>
+      <div>
+        <div class="mission-name">${m.name}</div>
+        <div class="mission-meta">
+          <span class="mission-tag ${typeClass[m.type]||'tag-inne'}">${typeLabel[m.type]||m.type}</span>
+          ${(Array.isArray(m.guilds)?m.guilds:(m.guild?[m.guild]:[])).map(g=>`<span class="guild-badge" style="color:${guildColor(g)};border-color:${guildColor(g)}66">${g}</span>`).join('')}
+          ${m.chapter ? `<span class="guild-badge">Roz. ${m.chapter}</span>` : ''}
+          ${m.location ? `<span>📍 ${m.location}</span>` : ''}
+          ${m.notes ? `<span style="font-style:italic;opacity:0.7">${m.notes.slice(0,50)}${m.notes.length>50?'…':''}</span>` : ''}
+        </div>
+      </div>
+      <div class="mission-actions" onclick="event.stopPropagation()">
+        <button class="btn-icon" onclick="openEdit('${m.id}')" title="Edytuj">✏</button>
+        <button class="btn-icon" onclick="deleteMissionById('${m.id}')" title="Usuń">✕</button>
+      </div>
+    </div>`).join('');
+  renderSidebar();
+}
+
+function renderSidebar(){
+  const gameMissions = state.missions.filter(m=>m.game===currentGame);
+  const total   = gameMissions.length;
+  const done    = gameMissions.filter(m=>m.done).length;
+  const active  = total - done;
+  const pct     = total ? Math.round(done/total*100) : 0;
+  const byType  = {};
+  gameMissions.forEach(m=>{ byType[m.type]=(byType[m.type]||0)+1; });
+
+  document.getElementById('sidebar').innerHTML = `
+    <div class="stat-stone">
+      <div class="stat-stone-title">Postęp</div>
+      <div class="stat-big">${done}<span style="font-size:0.5em;color:var(--ink-dim)">/${total}</span></div>
+      <div class="stat-big-label">misji ukończonych</div>
+      <div class="progress-stone" style="margin-top:12px">
+        <div class="progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div style="font-size:0.72em;color:var(--ink-dim);margin-top:6px;text-align:right;font-family:'Cinzel',serif">${pct}% ukończono</div>
+    </div>
+    <div class="stat-stone">
+      <div class="stat-stone-title">Aktywne misje</div>
+      <div class="stat-row"><span class="stat-row-label">⚔ Główne</span><span class="stat-row-val">${gameMissions.filter(m=>m.type==='glowna'&&!m.done).length}</span></div>
+<div class="stat-row"><span class="stat-row-label">📜 Poboczne</span><span class="stat-row-val">${gameMissions.filter(m=>m.type==='poboczna'&&!m.done).length}</span></div>
+
+    </div>
+    <div class="stat-stone">
+      <div class="stat-stone-title">Pilne misje</div>
+      ${gameMissions.filter(m=>m.prio==='high'&&!m.done).length
+        ? gameMissions.filter(m=>m.prio==='high'&&!m.done).slice(0,4).map(m=>`<div style="padding:5px 0;border-bottom:1px solid var(--stone);font-family:'IM Fell English',serif;font-size:0.88em;color:var(--blood2)">${m.name}</div>`).join('')
+        : '<div style="color:var(--ink-dim);font-size:0.82em;font-style:italic">Żadnych pilnych misji</div>'
+      }
+    </div>
+  `;
+}
+
+function renderStats(){
+  const el = document.getElementById('stats-content');
+  const gm = state.missions.filter(m=>m.game===currentGame);
+  const total  = gm.length;
+  const done   = gm.filter(m=>m.done).length;
+  const active = total - done;
+  if(!total){
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📜</div><div class="empty-text">Kronika jest pusta. Czas rozpocząć przygodę.</div></div>';
+    return;
+  }
+  const byType = {glowna:0,gildia:0,poboczna:0,inne:0};
+  gm.forEach(m=>{ if(byType[m.type]!==undefined) byType[m.type]++; });
+  const max = Math.max(...Object.values(byType), 1);
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px">
+      <div class="stat-stone"><div class="stat-big">${total}</div><div class="stat-big-label">Wszystkich misji</div></div>
+      <div class="stat-stone"><div class="stat-big" style="color:var(--blood2)">${active}</div><div class="stat-big-label">Aktywnych</div></div>
+      <div class="stat-stone"><div class="stat-big" style="color:var(--gold)">${done}</div><div class="stat-big-label">Ukończonych</div></div>
+      <div class="stat-stone"><div class="stat-big">${total?Math.round(done/total*100):0}%</div><div class="stat-big-label">Ukończono</div></div>
+    </div>
+    <div class="stat-stone" style="max-width:400px">
+      <div class="stat-stone-title">Misje wg typu</div>
+      ${Object.entries({glowna:'⚔ Główne',gildia:'🛡 Gildia',poboczna:'📜 Poboczne',inne:'· Inne'}).map(([k,l])=>`
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:0.8em;margin-bottom:3px">
+            <span>${l}</span><span style="font-family:'Cinzel',serif;color:var(--parchment)">${byType[k]}</span>
+          </div>
+          <div style="height:3px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(byType[k]/max*100)}%;background:var(--gold);border-radius:2px;transition:width 0.6s"></div>
+          </div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+
+function switchGame(game, btn){
+  currentGame = game;
+  document.querySelectorAll('.game-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGuildBar();
+  renderAll();
+}
+
+function renderGuildBar(){
+  const game = GAMES[currentGame];
+  const active = state.activeGuild[currentGame]||'';
+  const el = document.getElementById('guild-bar');
+  el.innerHTML = `
+    <span class="guild-bar-label">Gildia:</span>
+    <button class="guild-pill none-pill${!active?' active':''}" onclick="setActiveGuild('')">Wszystkie</button>
+    ${game.guilds.map(g=>`<button class="guild-pill${active===g?' active':''}" style="${active===g?`border-color:${guildColor(g)};color:${guildColor(g)};background:${guildColor(g)}1a`:''}" onclick="setActiveGuild('${g}')">${g}</button>`).join('')}
+  `;
+}
+
+function setActiveGuild(guild){
+  state.activeGuild[currentGame] = guild;
+  save();
+  renderGuildBar();
+  renderMissions();
+}
+
+function updateGuildChecks(selected){
+  selected = selected || [];
+  const guilds = GAMES[currentGame].guilds;
+  const el = document.getElementById('guild-checks');
+  el.innerHTML = guilds.map(g => `
+    <label class="guild-check-pill${selected.includes(g)?' checked':''}" data-guild="${g.replace(/"/g,'&quot;')}" style="${selected.includes(g)?`border-color:${guildColor(g)};color:${guildColor(g)};background:${guildColor(g)}1a`:''}">
+      <input type="checkbox" value="${g.replace(/"/g,'&quot;')}" ${selected.includes(g)?'checked':''}>
+      ${g}
+    </label>`).join('');
+  el.querySelectorAll('.guild-check-pill').forEach(pill=>{
+    pill.addEventListener('click', e=>{
+      e.preventDefault();
+      const cb = pill.querySelector('input');
+      cb.checked = !cb.checked;
+      const g = cb.value;
+      pill.classList.toggle('checked', cb.checked);
+      pill.style.borderColor = cb.checked ? guildColor(g) : '';
+      pill.style.color = cb.checked ? guildColor(g) : '';
+      pill.style.background = cb.checked ? guildColor(g)+'1a' : '';
+    });
+  });
+}
+
+function getSelectedGuilds(){
+  return [...document.querySelectorAll('#guild-checks input:checked')].map(cb=>cb.value);
+}
+
+// ── PREVIEW ──
+let previewId = null;
+
+function openPreview(id){
+  const m = state.missions.find(x=>x.id===id); if(!m) return;
+  previewId = id;
+
+  document.getElementById('preview-title').textContent = m.name;
+
+  const guilds = Array.isArray(m.guilds) ? m.guilds : (m.guild ? [m.guild] : []);
+  const rows = [];
+  rows.push(['Typ', typeLabel[m.type]||m.type]);
+  rows.push(['Priorytet', m.prio==='high'?'🔴 Pilne':m.prio==='low'?'⬜ Kiedyś':'🟡 Normalne']);
+  if(m.chapter) rows.push(['Rozdział', 'Rozdział '+m.chapter]);
+  if(m.location) rows.push(['Lokacja', m.location]);
+  rows.push(['Status', m.done ? '✔ Ukończona' : '· Aktywna']);
+
+  const rowsHTML = rows.map(([l,v])=>`
+    <div class="stat-row"><span class="stat-row-label">${l}</span><span class="stat-row-val">${v}</span></div>
+  `).join('');
+
+  const guildsHTML = guilds.length ? `
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+      ${guilds.map(g=>`<span class="guild-badge" style="color:${guildColor(g)};border-color:${guildColor(g)}66;font-size:0.7em">${g}</span>`).join('')}
+    </div>` : '';
+
+  const notesHTML = m.notes ? `
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+      <div class="fl" style="margin-bottom:6px">Notatki</div>
+      <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.98em;line-height:1.5;color:var(--ink)">${m.notes}</div>
+    </div>` : '';
+
+  document.getElementById('preview-body').innerHTML = `${rowsHTML}${guildsHTML}${notesHTML}`;
+  document.getElementById('preview-done-btn').textContent = m.done ? 'Cofnij ukończenie' : 'Oznacz jako wykonaną';
+  document.getElementById('ov-preview').classList.add('open');
+}
+
+function closePreview(){
+  document.getElementById('ov-preview').classList.remove('open');
+  previewId = null;
+}
+
+function editFromPreview(){
+  const id = previewId;
+  closePreview();
+  if(id) openEdit(id);
+}
+
+function toggleDoneFromPreview(){
+  if(previewId) toggleDone(previewId);
+  closePreview();
+}
+
+// CRUD
+function openAdd(){
+  editId = null;
+  document.getElementById('modal-title').textContent = 'Zapisz misję';
+  document.getElementById('del-btn').style.display = 'none';
+  updateGuildChecks();
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-type').value = 'poboczna';
+  document.getElementById('m-prio').value = 'mid';
+  document.getElementById('m-chapter').value = '';
+  document.getElementById('m-location').value = '';
+  document.getElementById('m-notes').value = '';
+  openModal();
+}
+
+function openEdit(id){
+  const m = state.missions.find(x=>x.id===id); if(!m) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Edytuj misję';
+  document.getElementById('del-btn').style.display = 'block';
+  document.getElementById('m-name').value = m.name;
+  document.getElementById('m-type').value = m.type;
+  document.getElementById('m-prio').value = m.prio;
+  // wsteczna kompatybilność: stare misje miały pojedynczą gildię jako string
+  const existingGuilds = Array.isArray(m.guilds) ? m.guilds : (m.guild ? [m.guild] : []);
+  updateGuildChecks(existingGuilds);
+  document.getElementById('m-chapter').value = m.chapter||'';
+  document.getElementById('m-location').value = m.location||'';
+  document.getElementById('m-notes').value = m.notes||'';
+  openModal();
+}
+
+function confirmMission(){
+  const name = document.getElementById('m-name').value.trim();
+  if(!name){ showToast('⚠ Wpisz nazwę misji'); return; }
+  const mission = {
+    id: editId || 'm'+Date.now(),
+    name,
+    type:     document.getElementById('m-type').value,
+    prio:     document.getElementById('m-prio').value,
+    location: document.getElementById('m-location').value.trim(),
+    guilds:   getSelectedGuilds(),
+    chapter:  document.getElementById('m-chapter').value,
+    game:     currentGame,
+    notes:    document.getElementById('m-notes').value.trim(),
+    done:     editId ? (state.missions.find(x=>x.id===editId)?.done||false) : false,
+    created:  editId ? (state.missions.find(x=>x.id===editId)?.created||Date.now()) : Date.now()
+  };
+  if(editId){ const i=state.missions.findIndex(x=>x.id===editId); if(i>=0) state.missions[i]=mission; showToast('✔ Misja zaktualizowana'); }
+  else { state.missions.unshift(mission); showToast('✔ Misja zapisana w kronice'); }
+  save(); renderAll(); closeModal();
+}
+
+function toggleDone(id){
+  const m = state.missions.find(x=>x.id===id); if(!m) return;
+  m.done = !m.done;
+  save(); renderAll();
+  showToast(m.done ? '✔ Misja ukończona!' : '· Misja przywrócona');
+}
+
+function deleteMission(){
+  const m = state.missions.find(x=>x.id===editId);
+  if(!confirm(`Wymazać misję "${m?.name}" z kroniki?`)) return;
+  state.missions = state.missions.filter(x=>x.id!==editId);
+  save(); renderAll(); closeModal(); showToast('· Misja wymazana');
+}
+
+function deleteMissionById(id){
+  const m = state.missions.find(x=>x.id===id);
+  if(!confirm(`Wymazać misję "${m?.name}" z kroniki?`)) return;
+  state.missions = state.missions.filter(x=>x.id!==id);
+  save(); renderAll(); showToast('· Misja wymazana');
+}
+
+function setFilter(f, btn){
+  activeFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMissions();
+}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  btn.classList.add('active');
+  renderAll();
+}
+
+function openModal(){ document.getElementById('ov-mission').classList.add('open'); setTimeout(()=>document.getElementById('m-name').focus(),100); }
+function closeModal(){ document.getElementById('ov-mission').classList.remove('open'); editId=null; }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+
+document.getElementById('ov-mission').addEventListener('click', e=>{ if(e.target===document.getElementById('ov-mission')) closeModal(); });
+document.getElementById('ov-preview').addEventListener('click', e=>{ if(e.target===document.getElementById('ov-preview')) closePreview(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closePreview(); } });
+
+load();
+renderGuildBar();
+renderAll();
+</script>
+</body>
+</html>
