@@ -20,7 +20,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 
 /* NAV */
 .nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:rgba(10,10,10,0.96);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);}
@@ -206,8 +206,55 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .toast{position:fixed;bottom:18px;right:18px;background:var(--bg2);border:1px solid var(--border2);padding:9px 16px;font-size:0.8em;z-index:9998;transform:translateY(50px);opacity:0;transition:all 0.25s cubic-bezier(.4,0,.2,1);}
 .toast.show{transform:none;opacity:1;}
 .empty{padding:60px;text-align:center;color:var(--muted);font-size:0.88em;}
-@media(max-width:900px){.shelf-layout{grid-template-columns:1fr;}}
-@media(max-width:600px){.nav{padding:0 12px;}.view{padding:12px;}.nav-tab{padding:6px 8px;font-size:0.7em;}.book-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));}}
+@media(max-width:900px){
+  .shelf-layout{grid-template-columns:1fr;}
+  /* na tabletach chowamy kolumnę Autor (zdublowaną pod tytułem) i Stron, żeby lista się nie ściskała */
+  .list-hd,.list-row{grid-template-columns:52px 1fr 70px auto;}
+  .list-hd>*:nth-child(3),.list-row>*:nth-child(3),
+  .list-hd>*:nth-child(5),.list-row>*:nth-child(5){display:none;}
+}
+@media(max-width:600px){
+  .nav{
+    flex-wrap:wrap;height:auto;min-height:56px;
+    padding:10px 14px;row-gap:8px;column-gap:10px;
+  }
+  .nav-brand{order:1;}
+  .nav-actions{order:2;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;gap:6px;}
+  .nav-tabs{
+    order:3;width:100%;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    justify-content:flex-start;
+    scrollbar-width:none;
+  }
+  .nav-tabs::-webkit-scrollbar{display:none;}
+  .nav-tab{padding:6px 10px;font-size:0.72em;white-space:nowrap;flex:0 0 auto;}
+  #user-email{display:none;}
+
+  .view{padding:14px;}
+  .book-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;}
+  .backlog-grid{grid-template-columns:1fr;}
+
+  .toolbar{gap:6px;}
+  .search-inp{min-width:100%;}
+  .filter-sel{flex:1;min-width:0;}
+
+  .frow{grid-template-columns:1fr;gap:0;}
+
+  .modal{width:100%;max-width:none;max-height:100vh;height:100%;}
+  .modal-bd{padding:14px;}
+  .modal-hd{padding:12px 14px;}
+  .modal-ft{padding:10px 14px;flex-wrap:wrap;}
+  .modal-ft .btn{flex:1;min-width:80px;}
+
+  .stats-cards{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+
+  /* na małym telefonie chowamy też Rok, zostają okładka/tytuł/akcje */
+  .list-hd,.list-row{grid-template-columns:44px 1fr auto;}
+  .list-hd>*:nth-child(4),.list-row>*:nth-child(4){display:none;}
+
+  .btn-xs{width:30px;height:30px;}
+  .toast{left:12px;right:12px;bottom:12px;text-align:center;}
+}
 </style>
 </head>
 <body>
