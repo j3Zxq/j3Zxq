@@ -965,9 +965,6 @@ function renderStats(){
   const g=state.games,allM=g.map(x=>parseTime(x.time)).filter(Boolean);
   const totM=allM.reduce((s,m)=>s+m,0),avgM=allM.length?Math.round(totM/allM.length):0;
   const plats=new Set(g.filter(x=>x.platinum).map(x=>x.title.toLowerCase())).size;
-  const steamOwned = g.filter(x=>x.steam==='owned').length;
-  const steamAvail = g.filter(x=>x.steam==='avail').length;
-  const steamNone  = g.filter(x=>!x.steam).length;
   document.getElementById('stats-top').innerHTML=`
     <div class="stat-card"><div class="stat-card-val">${g.length}</div><div class="stat-card-label">Ukończonych</div></div>
     <div class="stat-card"><div class="stat-card-val">${fmtMin(totM)}</div><div class="stat-card-label">Łączny czas</div></div>
@@ -975,9 +972,6 @@ function renderStats(){
     <div class="stat-card"><div class="stat-card-val">${plats}</div><div class="stat-card-label"><img src="platinum.png" alt="Platyna" class="icon-plat"> Platyny</div></div>
     <div class="stat-card"><div class="stat-card-val">${state.upcoming.length}</div><div class="stat-card-label">Premier</div></div>
     <div class="stat-card"><div class="stat-card-val">${state.backlog.length}</div><div class="stat-card-label">W backlogu</div></div>
-    <div class="stat-card"><div class="stat-card-val" style="color:var(--green)">${steamOwned}</div><div class="stat-card-label">Mam na Steam</div></div>
-    <div class="stat-card"><div class="stat-card-val" style="color:var(--red)">${steamAvail}</div><div class="stat-card-label">Nie mam (Steam)</div></div>
-    <div class="stat-card"><div class="stat-card-val" style="color:var(--muted)">${steamNone}</div><div class="stat-card-label">Bez tagu Steam</div></div>
   `;
   const byY={},byGe={},byPl={};
   g.forEach(x=>{const y=x.finished?.slice(0,4)||'?';byY[y]=(byY[y]||0)+1;});
