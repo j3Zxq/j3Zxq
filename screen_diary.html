@@ -3,9 +3,7 @@
 <head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
-<script>
-  requireAuth(); // blokuje render, jeśli brak sesji
-</script>
+<style>body{visibility:hidden}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SCREEN DIARY</title>
@@ -524,7 +522,7 @@ body::before{
 <body>
 
 <nav class="nav">
-  <a class="nav-brand" href="hub.html">⚡ NEXUS <span>/ Screen Diary</span></a>
+  <a class="nav-brand" href="index.html">⚡ NEXUS <span>/ Screen Diary</span></a>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('diary',this)">🎬 Dziennik</button>
     <button class="nav-tab" onclick="switchTab('stats',this)">📊 Statystyki</button>
@@ -535,6 +533,8 @@ body::before{
     <button class="btn" onclick="document.getElementById('fileInput').click()">📥</button>
     <button class="btn btn-gold" onclick="openAdd()">+ Dodaj</button>
     <input type="file" id="fileInput" accept=".json" onchange="importData(event)" style="display:none">
+    <span id="user-email" style="align-self:center;font-size:0.75em;letter-spacing:1px;color:var(--muted);margin-left:6px;"></span>
+    <button class="btn" id="logout-btn" onclick="logout()">Wyloguj</button>
   </div>
 </nav>
 
@@ -744,11 +744,48 @@ let editId = null;
 let viewMode = 'grid'; // 'grid' | 'list'
 let searchTimeout = null;
 
-function save(){ localStorage.setItem(SK, JSON.stringify(state)); }
+// ── CLOUD SYNC (Supabase) ──
+let cloudSaveTimer=null;
+function save(){
+  localStorage.setItem(SK, JSON.stringify(state));
+  scheduleCloudSave();
+}
 function load(){
   const s = localStorage.getItem(SK);
   if(s){ try{ const p=JSON.parse(s); if(p&&Array.isArray(p.entries)) state.entries=p.entries;
       if(p&&Array.isArray(p.watchlist)) state.watchlist=p.watchlist; }catch(e){} }
+}
+function scheduleCloudSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(pushToCloud,600); // debounce, żeby nie spamować requestów
+}
+async function pushToCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  await supabaseClient.from('nexus_data').upsert({
+    user_id: session.user.id,
+    module: 'screen_diary',
+    data: { state },
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,module' });
+}
+async function pullFromCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return false;
+  const { data, error } = await supabaseClient
+    .from('nexus_data')
+    .select('data')
+    .eq('user_id', session.user.id)
+    .eq('module', 'screen_diary')
+    .maybeSingle();
+  if(error || !data) return false;
+  const p = data.data;
+  if(p.state && typeof p.state==='object'){
+    if(Array.isArray(p.state.entries)) state.entries=p.state.entries;
+    if(Array.isArray(p.state.watchlist)) state.watchlist=p.state.watchlist;
+  }
+  localStorage.setItem(SK, JSON.stringify(state));
+  return true;
 }
 
 // ══════════════════════════════
@@ -1443,6 +1480,17 @@ document.getElementById('tmdb-search').addEventListener('input', e => {
 // ══════════════════════════════
 load();
 renderAll();
+
+requireAuth().then(async session => {
+  if (session) {
+    document.body.style.visibility = 'visible';
+    const emailEl = document.getElementById('user-email');
+    if (emailEl) emailEl.textContent = session.user.email;
+
+    const gotCloudData = await pullFromCloud();
+    if (gotCloudData) renderAll(); // dane z chmury nadpisały lokalne — odśwież widok
+  }
+});
 </script>
 </body>
 </html>
