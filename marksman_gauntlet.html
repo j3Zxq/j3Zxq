@@ -3,27 +3,25 @@
 <head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
-<script>
-  requireAuth(); // blokuje render, jeśli brak sesji
-</script>
+<style>body{visibility:hidden}</style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marksman Gauntlet</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --gold: #c89b3c;
-            --gold-bright: #f0e6d2;
-            --gold-dim: rgba(200,155,60,0.3);
-            --blue: #f39c12;
-            --green: #00ffcc;
-            --red: #ff4e4e;
-            --bg: #060d18;
-            --bg2: #0a1628;
-            --surface: rgba(8,16,30,0.97);
+            --gold: #b30000;
+            --gold-bright: #e8e8e8;
+            --gold-dim: rgba(179,0,0,0.3);
+            --blue: #60a5fa;
+            --green: #6ee7a0;
+            --red: #f07070;
+            --bg: #0a0a0a;
+            --bg2: #111111;
+            --surface: rgba(17,17,17,0.97);
             --glow: var(--gold);
-            --rank-color: #746d65;
+            --rank-color: rgba(232,232,232,0.38);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -75,7 +73,7 @@
         .side-box:hover { border-color: var(--gold); }
 
         .side-box h3 {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 0.65em;
             letter-spacing: 3px;
             color: var(--gold);
@@ -125,7 +123,7 @@
             padding: 8px 0;
         }
         .streak-num {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 2.2em;
             font-weight: 900;
             line-height: 1;
@@ -167,6 +165,41 @@
             gap: 20px;
         }
 
+        /* ── NAV ── */
+        .nav{
+          display:flex;align-items:center;justify-content:space-between;
+          padding:0 24px;height:56px;
+          background:rgba(10,10,10,0.96);
+          border-bottom:1px solid rgba(255,255,255,0.06);
+          position:sticky;top:0;z-index:200;
+          backdrop-filter:blur(10px);
+        }
+        .nav::after{content:'';position:absolute;bottom:-1px;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.5;pointer-events:none;}
+        .nav-brand{
+          font-family:'Orbitron',monospace;
+          font-size:1em;font-weight:700;letter-spacing:3px;
+          color:var(--gold-bright);
+          text-decoration:none;
+          display:flex;align-items:center;gap:10px;
+          text-shadow:0 0 16px rgba(180,0,0,0.35);
+        }
+        .nav-logo{width:22px;height:22px;min-width:22px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(180,0,0,0.5));display:block;}
+        .nav-brand span{
+          color:var(--rank-color);
+          font-family:'Rajdhani',sans-serif;
+          font-size:0.75em;letter-spacing:2px;
+        }
+        .nav-actions{display:flex;align-items:center;gap:8px;}
+        .btn{
+          padding:6px 14px;background:transparent;
+          border:1px solid rgba(255,255,255,0.12);color:var(--rank-color);
+          font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82em;
+          letter-spacing:1.5px;text-transform:uppercase;
+          cursor:pointer;transition:all 0.2s;
+          clip-path:polygon(6% 0%,100% 0%,94% 100%,0% 100%);
+        }
+        .btn:hover{color:var(--gold-bright);border-color:rgba(255,255,255,0.28);}
+
         /* header */
         .header {
             text-align: center;
@@ -174,7 +207,7 @@
             border-bottom: 1px solid var(--gold-dim);
         }
         .header h1 {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 2.2em;
             letter-spacing: 10px;
             color: var(--gold);
@@ -193,7 +226,7 @@
             padding: 4px 14px;
             border: 1px solid var(--rank-color);
             background: rgba(0,0,0,0.4);
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 0.85em;
             letter-spacing: 3px;
             color: var(--rank-color);
@@ -238,7 +271,7 @@
         }
 
         .champ-name {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 2.6em;
             font-weight: 900;
             letter-spacing: 6px;
@@ -284,7 +317,7 @@
 
         /* champ name centered */
         .champ-name {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 2.6em;
             font-weight: 900;
             letter-spacing: 6px;
@@ -315,7 +348,7 @@
             min-width: 70px;
         }
         .drawn-stat-val {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 1.1em;
             font-weight: 700;
         }
@@ -382,7 +415,7 @@
         }
         .btn-result {
             flex: 1; padding: 14px;
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 1em; font-weight: 700;
             letter-spacing: 4px;
             cursor: pointer;
@@ -397,7 +430,7 @@
         .btn-mvp {
             flex: 0 0 auto;
             padding: 14px 16px;
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 0.85em;
             color: var(--gold);
             border-color: var(--gold);
@@ -415,7 +448,7 @@
         /* draw button */
         .btn-draw {
             width: 100%; padding: 16px;
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 1.3em; font-weight: 700;
             letter-spacing: 6px;
             cursor: pointer;
@@ -439,7 +472,7 @@
             font-size: 0.85em;
         }
         thead th {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 0.72em;
             letter-spacing: 2px;
             color: var(--gold);
@@ -539,7 +572,7 @@
             padding: 10px 12px;
         }
         .tooltip-name {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 0.85em;
             letter-spacing: 2px;
             color: var(--gold);
@@ -615,7 +648,7 @@
             text-align: center;
         }
         .modal h3 {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             color: var(--gold);
             letter-spacing: 3px;
             margin-bottom: 12px;
@@ -624,7 +657,7 @@
         .modal-btns { display: flex; gap: 12px; justify-content: center; }
         .modal-btns button {
             padding: 10px 24px;
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 0.85em; letter-spacing: 2px;
             cursor: pointer; border: 1px solid;
             background: transparent;
@@ -648,7 +681,7 @@
             gap: 14px;
         }
         .pick-modal h3 {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             color: var(--gold);
             letter-spacing: 3px;
             font-size: 1em;
@@ -734,7 +767,7 @@
         /* rank cell in table */
         .rank-cell { display: flex; flex-direction: column; gap: 3px; min-width: 90px; }
         .champ-rank-label {
-            font-family: 'Cinzel', serif;
+            font-family: 'Orbitron', monospace;
             font-size: 0.68em;
             letter-spacing: 2px;
             padding: 2px 6px;
@@ -796,6 +829,14 @@
 <body>
 
 <canvas id="bg-canvas"></canvas>
+
+<nav class="nav">
+  <a class="nav-brand" href="index.html"><img class="nav-logo" src="akatsuki_logo.png" alt="Akatsuki Logo"> <span>NEXUS /</span> Marksman Gauntlet</a>
+  <div class="nav-actions">
+    <span id="user-email" style="align-self:center;font-size:0.75em;letter-spacing:1px;color:var(--rank-color);margin-left:6px;"></span>
+    <button class="btn" id="logout-btn" onclick="logout()">Wyloguj</button>
+  </div>
+</nav>
 
 <div class="layout">
     <!-- SIDEBAR -->
@@ -960,7 +1001,7 @@
         </div>
         <div class="pick-grid" id="pick-grid"></div>
         <div style="text-align:center">
-            <button class="btn-cancel" style="padding:8px 24px;font-family:'Cinzel',serif;font-size:0.8em;letter-spacing:2px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);background:transparent;color:var(--gold-bright);transition:all 0.2s" onclick="closePickModal()">ANULUJ</button>
+            <button class="btn-cancel" style="padding:8px 24px;font-family:'Orbitron',monospace;font-size:0.8em;letter-spacing:2px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);background:transparent;color:var(--gold-bright);transition:all 0.2s" onclick="closePickModal()">ANULUJ</button>
         </div>
     </div>
 </div>
@@ -1041,12 +1082,46 @@ let liveVersion = "16.9.1";
 
 const STORAGE_KEY = 'marksman_gauntlet_v1';
 
+// ── CLOUD SYNC (Supabase) ──
+let cloudSaveTimer=null;
+function scheduleCloudSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(pushToCloud,600); // debounce, żeby nie spamować requestów
+}
+async function pushToCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  await supabaseClient.from('nexus_data').upsert({
+    user_id: session.user.id,
+    module: 'marksman_gauntlet',
+    data: { state, history },
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,module' });
+}
+async function pullFromCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return false;
+  const { data, error } = await supabaseClient
+    .from('nexus_data')
+    .select('data')
+    .eq('user_id', session.user.id)
+    .eq('module', 'marksman_gauntlet')
+    .maybeSingle();
+  if(error || !data) return false;
+  const p = data.data;
+  if(Array.isArray(p.state)) state = p.state;
+  if(Array.isArray(p.history)) history = p.history;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, history }));
+  return true;
+}
+
 // ── SAVE / LOAD ──
 function saveState() {
     const data = { state, history };
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         document.getElementById('url-badge').textContent = '💾 AUTO-SAVE: OK';
+        scheduleCloudSave();
     } catch(e) {
         document.getElementById('url-badge').textContent = '⚠ SAVE FAILED';
     }
@@ -1949,6 +2024,17 @@ async function init() {
 
     loadState();
     renderAll();
+
+    requireAuth().then(async session => {
+      if (session) {
+        document.body.style.visibility = 'visible';
+        const emailEl = document.getElementById('user-email');
+        if (emailEl) emailEl.textContent = session.user.email;
+
+        const gotCloudData = await pullFromCloud();
+        if (gotCloudData) renderAll(); // dane z chmury nadpisały lokalne — odśwież widok
+      }
+    });
 }
 
 init();
