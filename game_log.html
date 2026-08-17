@@ -283,6 +283,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 }
 .btn-to-backlog:hover{border-color:var(--accent);color:var(--accent);}
 .icon-plat{height:1.15em;width:1.15em;object-fit:contain;vertical-align:-0.18em;display:inline-block;}
+.icon-steam{height:1.15em;width:1.15em;object-fit:contain;vertical-align:-0.18em;display:inline-block;}
 .plat-badge .icon-plat{width:1.05rem;height:1.05rem;vertical-align:-2px;}
 .stat-row-label .icon-plat,.stat-card-label .icon-plat{width:1rem;height:1rem;vertical-align:-2px;}
 
@@ -473,7 +474,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <div class="fg"><label class="fl">Czas gry</label><input class="fi" id="g-time" placeholder="np. 45h, 8h 30min"><div class="fhint">Wpisz np. "45h", "8h 20min", "120h"</div></div>
       <div class="fg"><label class="fl">Notatka (opcjonalnie)</label><input class="fi" id="g-note" placeholder="krótka opinia…"></div>
       <div class="fg"><label class="fl">Link (opcjonalnie)</label><input class="fi" id="g-link" placeholder="https://…" type="url"></div>
-      <div class="fg"><label class="fl">Steam</label><select class="fs" id="g-steam"><option value="">—</option><option value="owned">✅ Mam na Steam</option><option value="avail">❌ Nie mam (jest na Steam)</option></select></div>
+      <label class="plat-check" for="g-steam" style="margin-bottom:13px">
+        <input type="checkbox" id="g-steam">
+        <div><div class="plat-check-lbl"><img src="steam.png" alt="Steam" class="icon-steam"> Steam</div><div class="plat-check-sub">Zaznacz jeśli posiadasz tę grę na Steam</div></div>
+      </label>
       <div class="fg"><label class="fl">Top pozycja (1–3, opcjonalnie)</label><input class="fi" id="g-top" type="number" min="1" max="3" placeholder="1, 2 lub 3 – Twoje ulubione gry"><div class="fhint">Zostaw puste jeśli nie chcesz umieszczać w Top 3</div></div>
       <label class="plat-check" for="g-plat">
         <input type="checkbox" id="g-plat">
@@ -1008,7 +1012,7 @@ function openAddGame(){
   document.getElementById('g-title').value='';
   document.getElementById('g-finished').value=new Date().toISOString().slice(0,10);
   ['g-release','g-genre','g-note','g-time','g-link'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('g-steam').value='';
+  document.getElementById('g-steam').checked=false;
   document.getElementById('g-platform').value='PC';
   document.getElementById('g-plat').checked=false;
   document.getElementById('g-top').value='';
@@ -1028,7 +1032,7 @@ function openEditGame(id){
   document.getElementById('g-plat').checked=!!g.platinum;
   document.getElementById('g-top').value=g.top||'';
   document.getElementById('g-link').value=g.link||'';
-  document.getElementById('g-steam').value=g.steam||'';
+  document.getElementById('g-steam').checked=g.steam==='owned';
   openModal('ov-game');
 }
 function confirmGame(){
@@ -1036,7 +1040,7 @@ function confirmGame(){
   if(!title){showToast('⚠ Wpisz tytuł');return;}
   const topV=parseInt(document.getElementById('g-top').value);
   const top=(!isNaN(topV)&&topV>=1&&topV<=3)?topV:undefined;
-  const game={id:editGameId||'g'+Date.now(),title,finished:document.getElementById('g-finished').value||'',release:document.getElementById('g-release').value||'',genre:document.getElementById('g-genre').value.trim(),platform:document.getElementById('g-platform').value,time:document.getElementById('g-time').value.trim(),note:document.getElementById('g-note').value.trim(),platinum:document.getElementById('g-plat').checked,top,link:document.getElementById('g-link').value.trim()||null,steam:document.getElementById('g-steam').value||null};
+  const game={id:editGameId||'g'+Date.now(),title,finished:document.getElementById('g-finished').value||'',release:document.getElementById('g-release').value||'',genre:document.getElementById('g-genre').value.trim(),platform:document.getElementById('g-platform').value,time:document.getElementById('g-time').value.trim(),note:document.getElementById('g-note').value.trim(),platinum:document.getElementById('g-plat').checked,top,link:document.getElementById('g-link').value.trim()||null,steam:document.getElementById('g-steam').checked?'owned':null};
   if(top)state.games.forEach(g=>{if(g.id!==game.id&&g.top===top)g.top=undefined;});
   if(editGameId){const i=state.games.findIndex(x=>x.id===editGameId);if(i>=0)state.games[i]=game;showToast('✓ Zaktualizowano: '+title);}
   else{state.games.push(game);showToast('✓ Dodano: '+title);}
