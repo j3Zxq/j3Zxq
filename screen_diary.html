@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SCREEN DIARY</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:      #0a0a0a;
@@ -32,7 +32,7 @@
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
 
 body{
-  font-family:'DM Sans',sans-serif;
+  font-family:'Inter',sans-serif;
   background:var(--bg);
   color:var(--text);
   min-height:100vh;
@@ -49,46 +49,50 @@ body::before{
 /* ── NAV ── */
 .nav{
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 28px;height:58px;
-  background:rgba(15,14,13,0.96);
+  padding:0 24px;height:56px;
+  background:rgba(10,10,10,0.96);
   border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:200;
-  backdrop-filter:blur(12px);
+  backdrop-filter:blur(10px);
 }
+.nav::after{content:'';position:absolute;bottom:-1px;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--gold2),transparent);opacity:0.5;pointer-events:none;}
 .nav-brand{
-  font-family:'Playfair Display',serif;
-  font-size:1.2em;letter-spacing:2px;
-  color:var(--gold);
+  font-family:'Orbitron',monospace;
+  font-size:1em;font-weight:700;letter-spacing:3px;
+  color:var(--text);
   text-decoration:none;
   display:flex;align-items:center;gap:10px;
+  text-shadow:0 0 16px rgba(180,0,0,0.35);
 }
+.nav-logo{width:22px;height:22px;min-width:22px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(180,0,0,0.5));display:block;}
 .nav-brand span{
   color:var(--muted);
-  font-family:'DM Sans',sans-serif;
-  font-size:0.65em;letter-spacing:3px;
+  font-family:'Rajdhani',sans-serif;
+  font-size:0.75em;letter-spacing:2px;
   font-style:normal;
 }
-.nav-tabs{display:flex;gap:2px;}
+.nav-tabs{display:flex;gap:1px;}
 .nav-tab{
-  padding:6px 16px;background:transparent;border:none;
-  color:var(--muted);font-family:'DM Sans',sans-serif;
-  font-size:0.78em;letter-spacing:1.5px;text-transform:uppercase;
+  padding:6px 14px;background:transparent;border:none;
+  color:var(--muted);font-family:'Rajdhani',sans-serif;
+  font-weight:600;font-size:0.85em;letter-spacing:2px;text-transform:uppercase;
   cursor:pointer;transition:all 0.2s;
   border-bottom:2px solid transparent;
 }
 .nav-tab:hover{color:var(--text);}
-.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold);text-shadow:0 0 12px rgba(180,0,0,0.4);}
 .nav-actions{display:flex;gap:8px;}
 .btn{
   padding:6px 14px;background:transparent;
   border:1px solid var(--border2);color:var(--muted);
-  font-family:'DM Sans',sans-serif;font-size:0.78em;
-  letter-spacing:1px;text-transform:uppercase;
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82em;
+  letter-spacing:1.5px;text-transform:uppercase;
   cursor:pointer;transition:all 0.2s;
+  clip-path:polygon(6% 0%,100% 0%,94% 100%,0% 100%);
 }
 .btn:hover{color:var(--text);border-color:rgba(255,255,255,0.28);}
-.btn-gold{background:var(--gold);color:#0f0e0d;border-color:var(--gold);font-weight:600;}
-.btn-gold:hover{background:var(--gold2);border-color:var(--gold2);color:#0f0e0d;}
+.btn-gold{background:var(--gold);color:#0a0a0a;border-color:var(--gold);font-weight:600;}
+.btn-gold:hover{background:var(--gold2);border-color:var(--gold2);color:#0a0a0a;}
 
 /* ── VIEWS ── */
 .view{display:none;padding:28px;}
@@ -102,7 +106,7 @@ body::before{
   flex:1;min-width:200px;
   background:rgba(255,255,255,0.04);
   border:1px solid var(--border2);color:var(--text);
-  padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:0.88em;
+  padding:8px 12px;font-family:'Rajdhani',sans-serif;font-size:0.88em;
   outline:none;transition:border-color 0.2s;
 }
 .search-inp:focus{border-color:var(--gold);}
@@ -110,7 +114,7 @@ body::before{
 .filter-sel{
   background:rgba(255,255,255,0.04);border:1px solid var(--border2);
   color:var(--muted);padding:8px 10px;
-  font-family:'DM Sans',sans-serif;font-size:0.8em;
+  font-family:'Rajdhani',sans-serif;font-size:0.8em;
   outline:none;cursor:pointer;transition:border-color 0.2s;
 }
 .filter-sel:focus{border-color:var(--gold);}
@@ -163,7 +167,7 @@ body::before{
 
 /* back content */
 .card-back-title{
-  font-family:'Playfair Display',serif;
+  font-family:'Orbitron',serif;
   font-size:0.82em;font-weight:700;line-height:1.2;
   color:var(--cream);margin-bottom:4px;
   border-bottom:1px solid var(--border);padding-bottom:6px;
@@ -222,7 +226,7 @@ body::before{
 }
 .poster-info{padding:8px 10px;}
 .poster-title{
-  font-family:'Playfair Display',serif;
+  font-family:'Orbitron',serif;
   font-size:0.85em;font-weight:700;
   line-height:1.2;margin-bottom:4px;
 }
@@ -284,7 +288,7 @@ body::before{
   font-size:1.2em;opacity:0.3;border:1px solid var(--border);
 }
 .list-title{
-  font-family:'Playfair Display',serif;
+  font-family:'Orbitron',serif;
   font-size:0.88em;font-weight:700;line-height:1.2;
 }
 .list-orig{font-size:0.7em;color:var(--muted);margin-top:2px;font-style:italic;}
@@ -302,14 +306,14 @@ body::before{
 .diary-layout{display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:start;}
 .stat-panel{background:var(--bg2);border:1px solid var(--border);padding:16px;margin-bottom:12px;}
 .stat-panel-title{
-  font-family:'Playfair Display',serif;
+  font-family:'Orbitron',serif;
   font-size:0.72em;letter-spacing:3px;color:var(--gold);
   text-transform:uppercase;margin-bottom:12px;
   padding-bottom:8px;border-bottom:1px solid var(--border);
   font-style:italic;
 }
 .big-stat{
-  font-family:'Playfair Display',serif;
+  font-family:'Orbitron',serif;
   font-size:2.4em;color:var(--gold);letter-spacing:1px;
 }
 .big-stat-label{font-size:0.7em;color:var(--muted);letter-spacing:1px;margin-top:2px;}
@@ -320,7 +324,7 @@ body::before{
 .stat-row:last-child{border-bottom:none;}
 .stat-row-label{color:var(--muted);}
 .stat-row-val{
-  font-family:'Playfair Display',serif;
+  font-family:'Orbitron',serif;
   font-size:0.9em;color:var(--gold);
 }
 .mini-bar-wrap{height:3px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:3px;overflow:hidden;}
@@ -338,18 +342,18 @@ body::before{
 /* ── STATS VIEW ── */
 .stats-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
 .stat-card{background:var(--bg2);border:1px solid var(--border);padding:14px 16px;}
-.stat-card-val{font-family:'Playfair Display',serif;font-size:2em;color:var(--gold);letter-spacing:1px;}
+.stat-card-val{font-family:'Orbitron',serif;font-size:2em;color:var(--gold);letter-spacing:1px;}
 .stat-card-label{font-size:0.68em;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:4px;}
 .charts-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
 .chart-card{background:var(--bg2);border:1px solid var(--border);padding:16px 18px;}
 .chart-title{
-  font-family:'Playfair Display',serif;font-style:italic;
+  font-family:'Orbitron',serif;font-style:italic;
   font-size:0.82em;letter-spacing:1px;color:var(--gold);
   margin-bottom:12px;
 }
 .bar-item{margin-bottom:7px;}
 .bar-label-row{display:flex;justify-content:space-between;font-size:0.78em;margin-bottom:2px;}
-.bar-val{font-family:'Playfair Display',serif;font-size:0.9em;color:var(--gold);}
+.bar-val{font-family:'Orbitron',serif;font-size:0.9em;color:var(--gold);}
 .bar-track{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:2px;background:var(--gold);transition:width 0.6s ease;}
 
@@ -372,7 +376,7 @@ body::before{
   padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;
 }
 .modal-title{
-  font-family:'Playfair Display',serif;font-style:italic;
+  font-family:'Orbitron',serif;font-style:italic;
   font-size:1em;letter-spacing:1px;color:var(--gold);
 }
 .modal-x{
@@ -416,7 +420,7 @@ body::before{
 .fi,.fs{
   width:100%;background:rgba(255,255,255,0.04);
   border:1px solid var(--border2);color:var(--text);
-  padding:8px 11px;font-family:'DM Sans',sans-serif;font-size:0.88em;
+  padding:8px 11px;font-family:'Rajdhani',sans-serif;font-size:0.88em;
   outline:none;transition:border-color 0.2s;
 }
 .fi:focus,.fs:focus{border-color:var(--gold);}
@@ -434,7 +438,7 @@ body::before{
 }
 .selected-preview img{width:48px;height:72px;object-fit:cover;flex-shrink:0;}
 .selected-preview-info{}
-.selected-title{font-family:'Playfair Display',serif;font-size:0.92em;font-weight:700;}
+.selected-title{font-family:'Orbitron',serif;font-size:0.92em;font-weight:700;}
 .selected-meta{font-size:0.75em;color:var(--muted);margin-top:4px;line-height:1.4;}
 
 /* season section in modal */
@@ -502,7 +506,7 @@ body::before{
 .wl-card:hover{border-color:var(--border2);}
 .wl-card.wl-film{border-left:3px solid var(--gold);}
 .wl-card.wl-serial{border-left:3px solid var(--serial);}
-.wl-title{font-family:'Playfair Display',serif;font-size:0.92em;font-weight:700;line-height:1.2;}
+.wl-title{font-family:'Orbitron',serif;font-size:0.92em;font-weight:700;line-height:1.2;}
 .wl-meta{font-size:0.72em;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .wl-actions{display:flex;gap:5px;margin-top:2px;}
 .wl-prio-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -522,7 +526,7 @@ body::before{
 <body>
 
 <nav class="nav">
-  <a class="nav-brand" href="index.html">⚡ NEXUS <span>/ Screen Diary</span></a>
+  <a class="nav-brand" href="index.html"><img class="nav-logo" src="akatsuki_logo.png" alt="Akatsuki Logo"> <span>NEXUS /</span> Screen Diary</a>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('diary',this)">🎬 Dziennik</button>
     <button class="nav-tab" onclick="switchTab('stats',this)">📊 Statystyki</button>
@@ -689,7 +693,7 @@ body::before{
 <!-- WATCHLIST -->
 <div class="view" id="view-watchlist">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:8px;">
-    <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:1em;color:var(--gold)">Do obejrzenia</div>
+    <div style="font-family:'Orbitron',serif;font-style:italic;font-size:1em;color:var(--gold)">Do obejrzenia</div>
     <button class="btn btn-gold" onclick="openAddWl()">+ Dodaj</button>
   </div>
   <div class="watchlist-grid" id="watchlist-grid"></div>
@@ -957,7 +961,7 @@ function listRowHTML(e){
     <div class="list-row" onclick="openEdit('${e.id}')">
       ${imgHTML}
       <div>
-        <div class="list-title">${e.title}${e.rewatch?` <span style="font-size:0.65em;color:var(--gold);font-family:DM Sans">↩${e.rewatch>1?' ×'+e.rewatch:''}</span>`:''}</div>
+        <div class="list-title">${e.title}${e.rewatch?` <span style="font-size:0.65em;color:var(--gold);font-family:Rajdhani">↩${e.rewatch>1?' ×'+e.rewatch:''}</span>`:''}</div>
         ${e.orig&&e.orig!==e.title?`<div class="list-orig">${e.orig}</div>`:''}
       </div>
       <div class="list-cell"><span class="type-badge ${e.type==='serial'?'type-serial':'type-film'}">${e.type==='serial'?'Serial':'Film'}</span></div>
