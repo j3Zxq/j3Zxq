@@ -285,6 +285,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .icon-plat{height:1.15em;width:1.15em;object-fit:contain;vertical-align:-0.18em;display:inline-block;}
 .icon-steam{height:1.15em;width:1.15em;object-fit:contain;vertical-align:-0.18em;display:inline-block;}
 .plat-badge .icon-plat{width:1.05rem;height:1.05rem;vertical-align:-2px;}
+.steam-row-icon{width:1.05rem;height:1.05rem;object-fit:contain;vertical-align:-2px;margin-right:4px;}
 .stat-row-label .icon-plat,.stat-card-label .icon-plat{width:1rem;height:1rem;vertical-align:-2px;}
 
 @media(max-width:900px){.log-layout{grid-template-columns:1fr;}}
@@ -809,7 +810,7 @@ function gameRow(g){
     <div class="game-cell"><span class="ptag ${pc}">${g.platform||'—'}</span></div>
     <div class="game-cell mono">${g.release?fmtDate(g.release):'—'}</div>
     <div class="game-cell mono">${mins?fmtMin(mins):g.time||'—'}</div>
-    <div class="game-cell" style="text-align:center">${nth>1?`<span class="replay-badge ${nth===2?'r2':'r3plus'}">↩${nth}</span>`:''}${g.platinum?`<span class="plat-badge"><img src="platinum.png" alt="Platyna" class="icon-plat"></span>`:`<span style="color:var(--muted)">—</span>`}</div>
+    <div class="game-cell" style="text-align:center">${nth>1?`<span class="replay-badge ${nth===2?'r2':'r3plus'}">↩${nth}</span>`:''}${g.steam==='owned'?`<img src="steam.png" alt="Steam" class="steam-row-icon" title="Posiadam na Steam">`:''}${g.platinum?`<span class="plat-badge"><img src="platinum.png" alt="Platyna" class="icon-plat"></span>`:`<span style="color:var(--muted)">—</span>`}</div>
     <div class="game-actions" onclick="event.stopPropagation()">
       ${g.link?`<a class="btn-link" href="${g.link}" target="_blank" title="Otwórz link" onclick="event.stopPropagation()">↗</a>`:''}
       <button class="btn-xs" onclick="deleteGame('${g.id}')">✕</button>
