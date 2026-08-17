@@ -3,35 +3,33 @@
 <head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
-<script>
-  requireAuth(); // blokuje render, jeśli brak sesji
-</script>
+<style>body{visibility:hidden}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MUSIC VAULT</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:      #0c0c0e;
-  --bg2:     #111115;
-  --bg3:     #16161c;
-  --border:  rgba(255,255,255,0.08);
-  --border2: rgba(255,255,255,0.14);
-  --text:    #e8e4de;
-  --muted:   rgba(232,228,222,0.45);
-  --accent:  #e8c87a;
-  --accent2: #b8965a;
-  --red:     #e05555;
-  --green:   #5ec97a;
-  --blue:    #5b9bd5;
-  --purple:  #9b6dd6;
+  --bg:      #0a0a0a;
+  --bg2:     #111111;
+  --bg3:     #1a1a1a;
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+  --text:    #e8e8e8;
+  --muted:   rgba(232,232,232,0.38);
+  --accent:  #b30000;
+  --accent2: #8b0000;
+  --red:     #f07070;
+  --green:   #6ee7a0;
+  --blue:    #60a5fa;
+  --purple:  #b30000;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;}
 
 body{
-  font-family:'DM Sans',sans-serif;
+  font-family:'Inter',sans-serif;
   background:var(--bg);
   color:var(--text);
   min-height:100vh;
@@ -46,56 +44,63 @@ body{
 /* ── TOP NAV ── */
 .topnav{
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 28px;
+  padding:0 24px;
   height:56px;
-  background:rgba(12,12,14,0.95);
+  background:rgba(10,10,10,0.96);
   border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:200;
-  backdrop-filter:blur(12px);
+  backdrop-filter:blur(10px);
 }
+.topnav::after{content:'';position:absolute;bottom:-1px;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);opacity:0.5;pointer-events:none;}
 .topnav-left{display:flex;align-items:center;gap:20px;}
 .logo{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:1.5em;letter-spacing:4px;
-  color:var(--accent);
+  font-family:'Orbitron',monospace;
+  font-size:1em;font-weight:700;letter-spacing:3px;
+  color:var(--text);
   text-decoration:none;
+  display:flex;align-items:center;gap:10px;
+  text-shadow:0 0 16px rgba(180,0,0,0.35);
 }
-.logo span{color:var(--muted);font-size:0.7em;letter-spacing:2px;margin-left:6px;}
+.nav-logo{width:22px;height:22px;min-width:22px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(180,0,0,0.5));display:block;}
+.logo span{color:var(--muted);font-size:0.75em;letter-spacing:2px;margin-left:6px;font-family:'Rajdhani',sans-serif;}
 
-.tab-nav{display:flex;gap:2px;}
+.tab-nav{display:flex;gap:1px;}
 .tab-btn{
-  padding:6px 16px;
+  padding:6px 14px;
   background:transparent;
   border:none;
   color:var(--muted);
-  font-family:'DM Sans',sans-serif;
-  font-size:0.82em;
-  letter-spacing:1.5px;
+  font-family:'Rajdhani',sans-serif;
+  font-weight:600;
+  font-size:0.85em;
+  letter-spacing:2px;
   text-transform:uppercase;
   cursor:pointer;
   transition:all 0.2s;
   border-bottom:2px solid transparent;
 }
 .tab-btn:hover{color:var(--text);}
-.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);text-shadow:0 0 12px rgba(180,0,0,0.4);}
 
-.topnav-right{display:flex;gap:8px;}
+.topnav-right{display:flex;align-items:center;gap:8px;}
 .btn-sm{
   padding:6px 14px;
   background:transparent;
   border:1px solid var(--border2);
   color:var(--muted);
-  font-family:'DM Sans',sans-serif;
-  font-size:0.78em;letter-spacing:1px;
+  font-family:'Rajdhani',sans-serif;
+  font-weight:600;
+  font-size:0.82em;letter-spacing:1.5px;
   cursor:pointer;transition:all 0.2s;
   text-transform:uppercase;
+  clip-path:polygon(6% 0%,100% 0%,94% 100%,0% 100%);
 }
-.btn-sm:hover{color:var(--text);border-color:rgba(255,255,255,0.3);}
+.btn-sm:hover{color:var(--text);border-color:rgba(255,255,255,0.28);}
 .btn-primary{
-  background:var(--accent);color:#0c0c0e;
+  background:var(--accent);color:#0a0a0a;
   border-color:var(--accent);font-weight:600;
 }
-.btn-primary:hover{background:var(--accent2);border-color:var(--accent2);color:#0c0c0e;}
+.btn-primary:hover{background:var(--accent2);border-color:var(--accent2);color:#0a0a0a;}
 
 /* ── VIEWS ── */
 .view{display:none;padding:28px;}
@@ -123,7 +128,7 @@ body{
 .genre-header-left{display:flex;align-items:center;gap:10px;}
 .genre-dot{width:10px;height:10px;border-radius:50%;}
 .genre-name{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Orbitron',monospace;
   font-size:1.1em;letter-spacing:3px;
   color:var(--text);
 }
@@ -242,7 +247,7 @@ body{
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:10px;
 }
-.top-card-title{font-family:'Bebas Neue',sans-serif;font-size:1.1em;letter-spacing:3px;}
+.top-card-title{font-family:'Orbitron',monospace;font-size:1.1em;letter-spacing:3px;}
 .top-list{padding:8px 0;}
 .top-item{
   display:flex;align-items:center;gap:12px;
@@ -251,7 +256,7 @@ body{
 }
 .top-item:last-child{border-bottom:none;}
 .top-pos{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Orbitron',monospace;
   font-size:1.3em;color:var(--muted);
   width:28px;text-align:center;flex-shrink:0;
 }
@@ -269,7 +274,7 @@ body{
   background:var(--bg2);border:1px solid var(--border);
   padding:18px 20px;
 }
-.stat-val{font-family:'Bebas Neue',sans-serif;font-size:2.4em;letter-spacing:2px;color:var(--accent);}
+.stat-val{font-family:'Orbitron',monospace;font-size:2.4em;letter-spacing:2px;color:var(--accent);}
 .stat-label{font-size:0.72em;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:4px;}
 .genre-breakdown{
   display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;
@@ -309,7 +314,7 @@ body{
   border-bottom:1px solid var(--border);
   flex-shrink:0;
 }
-.modal-title{font-family:'Bebas Neue',sans-serif;font-size:1.1em;letter-spacing:3px;color:var(--accent);}
+.modal-title{font-family:'Orbitron',monospace;font-size:1.1em;letter-spacing:3px;color:var(--accent);}
 .modal-close{
   background:transparent;border:none;
   color:var(--muted);font-size:1.2em;
@@ -339,7 +344,7 @@ body{
   border:1px solid var(--border2);
   color:var(--text);
   padding:9px 12px;
-  font-family:'DM Sans',sans-serif;
+  font-family:'Rajdhani',sans-serif;
   font-size:0.9em;
   outline:none;
   transition:border-color 0.2s;
@@ -405,7 +410,7 @@ body{
   color:var(--muted);
   font-size:0.72em;letter-spacing:1px;
   cursor:pointer;transition:all 0.18s;
-  text-transform:uppercase;font-family:'DM Sans',sans-serif;
+  text-transform:uppercase;font-family:'Rajdhani',sans-serif;
 }
 .btn-rate:hover{border-color:var(--accent);color:var(--accent);}
 
@@ -427,7 +432,7 @@ body{
   border:1px solid var(--border2);
   color:var(--text);
   padding:5px 8px;
-  font-family:'DM Sans',sans-serif;
+  font-family:'Rajdhani',sans-serif;
   font-size:0.85em;outline:none;
 }
 .rate-input-sm:focus{border-color:var(--accent);}
@@ -435,7 +440,7 @@ body{
 .btn-save-rate{
   padding:5px 12px;background:var(--accent);
   border:none;color:#0c0c0e;
-  font-family:'DM Sans',sans-serif;
+  font-family:'Rajdhani',sans-serif;
   font-size:0.75em;font-weight:600;
   letter-spacing:1px;cursor:pointer;transition:background 0.2s;
 }
@@ -479,7 +484,7 @@ body{
   border:1px dashed var(--border2);
   color:var(--muted);
   cursor:pointer;
-  font-family:'DM Sans',sans-serif;
+  font-family:'Rajdhani',sans-serif;
   font-size:0.8em;letter-spacing:2px;
   text-transform:uppercase;
   width:100%;
@@ -518,7 +523,7 @@ body{
 <!-- TOP NAV -->
 <nav class="topnav">
   <div class="topnav-left">
-    <a class="logo" href="hub.html">⚡ NEXUS <span>/ MUSIC VAULT</span></a>
+    <a class="logo" href="index.html"><img class="nav-logo" src="akatsuki_logo.png" alt="Akatsuki Logo"> NEXUS <span>/ MUSIC VAULT</span></a>
     <div class="tab-nav">
       <button class="tab-btn active" onclick="switchTab('library')">📁 Biblioteka</button>
       <button class="tab-btn" onclick="switchTab('top')">🏆 Rankingi</button>
@@ -530,6 +535,8 @@ body{
     <button class="btn-sm" onclick="document.getElementById('fileInput').click()">📥 Import</button>
     <button class="btn-sm btn-primary" onclick="openAddArtist()">+ Dodaj Artystę</button>
     <input type="file" id="fileInput" accept=".json" onchange="importData(event)" style="display:none">
+    <span id="user-email" style="align-self:center;font-size:0.75em;letter-spacing:1px;color:var(--muted);margin-left:6px;"></span>
+    <button class="btn-sm" id="logout-btn" onclick="logout()">Wyloguj</button>
   </div>
 </nav>
 
@@ -580,7 +587,7 @@ body{
         </div>
         <div class="form-group">
           <label class="form-label">Albumy (każdy w nowej linii, opcjonalnie rok po przecinku)</label>
-          <textarea id="manual-albums" rows="6" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text);padding:8px 11px;font-family:'DM Sans',sans-serif;font-size:0.85em;outline:none;resize:vertical;min-height:120px;" placeholder="Słoma w butach, 2003&#10;Krew na betonie, 2006&#10;Brutalna Rzeczywistość, 2010"></textarea>
+          <textarea id="manual-albums" rows="6" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text);padding:8px 11px;font-family:'Rajdhani',sans-serif;font-size:0.85em;outline:none;resize:vertical;min-height:120px;" placeholder="Słoma w butach, 2003&#10;Krew na betonie, 2006&#10;Brutalna Rzeczywistość, 2010"></textarea>
           <div class="form-hint">Możesz wpisać sam tytuł albo "Tytuł, rok"</div>
         </div>
       </div>
@@ -726,6 +733,7 @@ let rateAlbumOpenId = null;
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  scheduleCloudSave();
 }
 
 function loadState() {
@@ -739,6 +747,41 @@ function loadState() {
       }
     } catch(e) {}
   }
+}
+
+// ── CLOUD SYNC (Supabase) ──
+let cloudSaveTimer=null;
+function scheduleCloudSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(pushToCloud,600); // debounce, żeby nie spamować requestów
+}
+async function pushToCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  await supabaseClient.from('nexus_data').upsert({
+    user_id: session.user.id,
+    module: 'music_vault',
+    data: { state },
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,module' });
+}
+async function pullFromCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return false;
+  const { data, error } = await supabaseClient
+    .from('nexus_data')
+    .select('data')
+    .eq('user_id', session.user.id)
+    .eq('module', 'music_vault')
+    .maybeSingle();
+  if(error || !data) return false;
+  const p = data.data;
+  if(p.state && typeof p.state==='object'){
+    if(Array.isArray(p.state.genres)) state.genres = p.state.genres;
+    if(Array.isArray(p.state.artists)) state.artists = p.state.artists;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  return true;
 }
 
 // ══════════════════════════════════════════════
@@ -1487,6 +1530,17 @@ function showToast(msg) {
 // ══════════════════════════════════════════════
 loadState();
 renderAll();
+
+requireAuth().then(async session => {
+  if (session) {
+    document.body.style.visibility = 'visible';
+    const emailEl = document.getElementById('user-email');
+    if (emailEl) emailEl.textContent = session.user.email;
+
+    const gotCloudData = await pullFromCloud();
+    if (gotCloudData) renderAll(); // dane z chmury nadpisały lokalne — odśwież widok
+  }
+});
 
 // close overlay on backdrop click
 document.querySelectorAll('.overlay').forEach(ov => {
