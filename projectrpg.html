@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<style>body{visibility:hidden}</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARAŻ</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚗</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --text:#e8e8e8;--muted:rgba(232,232,232,0.38);
+  --accent:#b30000;--accent2:#8b0000;--accent3:#cc1a1a;
+  --coal:#2a2a2a;--coal2:#383838;
+  --gold:#f4c550;--silver:#b0bec5;--bronze:#c47a45;
+  --red:#f07070;--green:#6ee7a0;--yellow:#ffd166;--blue:#60a5fa;--purple:#b30000;
+}
+html, body { height: 100%; }
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(179,0,0,0.35);border-radius:2px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.5;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);pointer-events:none;z-index:9998;}
+
+.nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:rgba(10,10,10,0.96);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);}
+.nav::after{content:'';position:absolute;bottom:-1px;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);opacity:0.5;pointer-events:none;}
+.nav-brand{font-family:'Orbitron',monospace;font-size:1em;font-weight:700;letter-spacing:3px;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:10px;text-shadow:0 0 16px rgba(180,0,0,0.35);}
+.nav-logo{width:22px;height:22px;min-width:22px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(180,0,0,0.5));display:block;}
+.nav-brand span{color:var(--muted);font-size:0.75em;font-family:'Rajdhani',sans-serif;letter-spacing:2px;}
+.nav-tabs{display:flex;gap:1px;}
+.nav-tab{padding:6px 14px;background:transparent;border:none;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.85em;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--accent3);border-bottom-color:var(--accent2);text-shadow:0 0 12px rgba(180,0,0,0.4);}
+.nav-actions{display:flex;gap:8px;}
+.btn{padding:6px 14px;background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82em;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;clip-path:polygon(6% 0%,100% 0%,94% 100%,0% 100%);}
+.btn:hover{color:var(--text);border-color:var(--accent2);box-shadow:0 0 14px rgba(139,0,0,0.3);}
+.btn-accent{background:var(--accent);color:var(--text);border-color:var(--accent2);font-weight:700;}
+.btn-accent:hover{background:var(--accent2);border-color:var(--accent3);color:var(--text);box-shadow:0 0 20px rgba(139,0,0,0.4);}
+
+.view{display:none;padding:24px;}
+.view.active{display:block;}
+
+/* ── SUMMARY BAR ── */
+.summary-bar{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;max-width:1400px;margin-left:auto;margin-right:auto;}
+.summary-stat{background:var(--bg2);border:1px solid var(--border);padding:16px 22px;flex:1;min-width:200px;}
+.big-stat{font-family:'Orbitron',monospace;font-size:1.9em;color:var(--accent);letter-spacing:1px;}
+.big-stat-label{font-size:0.68em;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+
+/* ── VEHICLES ── */
+.vehicles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;max-width:1400px;margin:0 auto;}
+.vehicle-card{background:var(--bg2);border:1px solid var(--border);display:flex;flex-direction:column;transition:border-color 0.2s;}
+.vehicle-card:hover{border-color:rgba(179,0,0,0.35);}
+.vehicle-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.vehicle-name{font-family:'Orbitron',monospace;font-size:1.1em;letter-spacing:1.5px;color:var(--text);margin-bottom:8px;}
+.vehicle-sum-label{font-size:0.6em;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.vehicle-sum{font-family:'Orbitron',monospace;font-size:1.2em;color:var(--accent);margin-top:2px;}
+.vehicle-del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:0.95em;flex-shrink:0;transition:color 0.15s;}
+.vehicle-del:hover{color:var(--accent3);}
+.parts-list{padding:4px 0;max-height:360px;overflow-y:auto;flex:1;}
+.part-row{display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid var(--border);font-size:0.84em;}
+.part-row:last-child{border-bottom:none;}
+.part-row.not-bought{opacity:0.5;}
+.part-row.not-bought .part-name::after{content:' (do kupienia)';font-size:0.85em;color:var(--muted);font-style:italic;}
+.part-check{width:16px;height:16px;flex-shrink:0;border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.68em;color:var(--accent);transition:all 0.15s;}
+.part-check.checked{background:rgba(179,0,0,0.18);border-color:var(--accent);}
+.part-check:hover{border-color:var(--accent);}
+.part-name{flex:1;}
+.part-price{font-family:'Orbitron',monospace;font-size:0.82em;color:var(--accent);white-space:nowrap;}
+.part-row.not-bought .part-price{color:var(--muted);}
+.part-actions{display:flex;gap:2px;flex-shrink:0;}
+.btn-xs{width:22px;height:22px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:0.72em;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+.btn-xs:hover{border-color:var(--border2);color:var(--text);}
+.vehicle-ft{padding:10px 16px;border-top:1px solid var(--border);}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:0.85em;}
+
+/* ── PRICELIST ── */
+.pricelist-hd{display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto 14px;}
+.pricelist-hd h2{font-family:'Orbitron',monospace;font-size:0.85em;letter-spacing:3px;color:var(--accent);text-transform:uppercase;}
+.pricelist-wrap{max-width:900px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);}
+.pricelist-cols{display:flex;align-items:center;gap:8px;padding:6px 16px;font-size:0.62em;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
+.pricelist-cols span:first-child{flex:1;}
+
+/* ── MODALS ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:800;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.22s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg2);border:1px solid rgba(139,0,0,0.4);width:96%;max-width:460px;max-height:90vh;display:flex;flex-direction:column;animation:mIn 0.22s ease;box-shadow:0 0 0 1px rgba(139,0,0,0.15),0 20px 60px rgba(0,0,0,0.8),0 0 40px rgba(139,0,0,0.1);}
+@keyframes mIn{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(139,0,0,0.2);flex-shrink:0;}
+.mhd-title{font-family:'Orbitron',monospace;font-size:0.88em;letter-spacing:2px;color:var(--accent);}
+.modal-x{background:transparent;border:none;color:var(--muted);font-size:1.1em;cursor:pointer;transition:color 0.2s;width:26px;height:26px;display:flex;align-items:center;justify-content:center;}
+.modal-x:hover{color:var(--text);}
+.modal-bd{padding:18px;overflow-y:auto;flex:1;}
+.modal-ft{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+.fg{margin-bottom:13px;}
+.fl{display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.72em;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:5px;}
+.fi,.fs{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border2);color:var(--text);padding:8px 11px;font-family:'Inter',sans-serif;font-size:0.88em;outline:none;transition:border-color 0.2s;}
+.fi:focus,.fs:focus{border-color:var(--accent);}
+.fi::placeholder{color:var(--muted);}
+.fs option{background:var(--bg2);}
+.fhint{font-size:0.68em;color:var(--muted);margin-top:4px;}
+.check-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(179,0,0,0.05);border:1px solid rgba(179,0,0,0.2);cursor:pointer;user-select:none;transition:background 0.15s;}
+.check-row:hover{background:rgba(179,0,0,0.1);}
+.check-row input{accent-color:var(--purple);width:15px;height:15px;cursor:pointer;}
+
+.toast{position:fixed;bottom:18px;right:18px;background:var(--bg2);border:1px solid var(--border2);padding:9px 16px;font-size:0.8em;z-index:9998;transform:translateY(50px);opacity:0;transition:all 0.25s cubic-bezier(.4,0,.2,1);}
+.toast.show{transform:none;opacity:1;}
+
+@media(max-width:700px){
+  .nav{flex-wrap:wrap;height:auto;min-height:56px;padding:8px 12px;row-gap:8px;}
+  .nav-brand{order:1;flex:1 1 auto;font-size:0.9em;}
+  .nav-actions{order:2;flex-wrap:wrap;row-gap:6px;justify-content:flex-end;}
+  .nav-tabs{order:3;flex:1 1 100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap;}
+  .nav-tabs::-webkit-scrollbar{display:none;}
+  .nav-tab{flex-shrink:0;}
+  #user-email{display:none;}
+  .view{padding:14px;}
+  .vehicles-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="index.html"><img class="nav-logo" src="akatsuki_logo.png" alt="Akatsuki Logo"> <span>NEXUS /</span> GARAŻ</a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('garage',this)">🚗 Garaż</button>
+    <button class="nav-tab" onclick="switchTab('pricelist',this)">💲 Cennik</button>
+  </div>
+  <div class="nav-actions">
+    <button class="btn" onclick="exportData()">📤</button>
+    <button class="btn" onclick="document.getElementById('fileInput').click()">📥</button>
+    <button class="btn btn-accent" onclick="openAddVehicle()">+ Dodaj pojazd</button>
+    <input type="file" id="fileInput" accept=".json" onchange="importData(event)" style="display:none">
+    <span id="user-email" style="align-self:center;font-size:0.75em;letter-spacing:1px;color:var(--muted);margin-left:6px;"></span>
+    <button class="btn" id="logout-btn" onclick="logout()">Wyloguj</button>
+  </div>
+</nav>
+
+<div class="view active" id="view-garage">
+  <div class="summary-bar">
+    <div class="summary-stat">
+      <div class="big-stat" id="sum-total">$0,00</div>
+      <div class="big-stat-label">Wartość floty</div>
+    </div>
+    <div class="summary-stat">
+      <div class="big-stat" id="sum-count">0</div>
+      <div class="big-stat-label">Pojazdów</div>
+    </div>
+    <div class="summary-stat">
+      <div class="big-stat" id="sum-tobuy">$0,00</div>
+      <div class="big-stat-label">Budżet do dokupienia</div>
+    </div>
+  </div>
+  <div class="vehicles-grid" id="vehicles-grid"></div>
+</div>
+
+<div class="view" id="view-pricelist">
+  <div class="pricelist-hd">
+    <h2>Cennik części</h2>
+    <button class="btn btn-accent" onclick="openAddPricelistItem()">+ Dodaj część</button>
+  </div>
+  <div class="pricelist-wrap">
+    <div class="pricelist-cols"><span>Część</span><span>Cena (bazowa → z prowizją)</span><span></span></div>
+    <div id="pricelist-body"></div>
+  </div>
+</div>
+
+<!-- MODAL: dodaj pojazd -->
+<div class="overlay" id="ov-vehicle">
+  <div class="modal">
+    <div class="modal-hd"><span class="mhd-title">Nowy pojazd</span><button class="modal-x" onclick="closeModal('ov-vehicle')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg">
+        <label class="fl">Nazwa pojazdu</label>
+        <input class="fi" id="veh-name" placeholder="np. Buffalo" onkeydown="if(event.key==='Enter')confirmAddVehicle()">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeModal('ov-vehicle')">Anuluj</button>
+      <button class="btn btn-accent" onclick="confirmAddVehicle()">Dodaj</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: dodaj/edytuj część pojazdu -->
+<div class="overlay" id="ov-part">
+  <div class="modal">
+    <div class="modal-hd"><span class="mhd-title" id="part-modal-title">Dodaj część</span><button class="modal-x" onclick="closeModal('ov-part')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg">
+        <label class="fl">Wybierz z cennika</label>
+        <select class="fs" id="part-pick" onchange="fillPartFromPricelist()">
+          <option value="">— własna część —</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Nazwa części</label>
+        <input class="fi" id="part-name" placeholder="np. TURBO">
+      </div>
+      <div class="fg">
+        <label class="fl">Cena bazowa</label>
+        <input class="fi" id="part-price" type="number" min="0" step="1" placeholder="0">
+        <div class="fhint">Cena „z prowizją" (do 20% dla tunera) liczy się automatycznie.</div>
+      </div>
+      <label class="check-row">
+        <input type="checkbox" id="part-bought">
+        <span>Już kupione (wlicz do sumy pojazdu)</span>
+      </label>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeModal('ov-part')">Anuluj</button>
+      <button class="btn btn-accent" onclick="confirmPart()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: dodaj/edytuj pozycję cennika -->
+<div class="overlay" id="ov-pricelist">
+  <div class="modal">
+    <div class="modal-hd"><span class="mhd-title" id="pricelist-modal-title">Nowa część w cenniku</span><button class="modal-x" onclick="closeModal('ov-pricelist')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg">
+        <label class="fl">Nazwa części</label>
+        <input class="fi" id="pl-name" placeholder="np. TURBO">
+      </div>
+      <div class="fg">
+        <label class="fl">Cena bazowa</label>
+        <input class="fi" id="pl-price" type="number" min="0" step="1" placeholder="0">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeModal('ov-pricelist')">Anuluj</button>
+      <button class="btn btn-accent" onclick="confirmPricelistItem()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════
+// STAN + PERSYSTENCJA
+// ══════════════════════════════
+const SK = 'projectrpg_v1';
+const FEE_MULT = 1.2; // max prowizja tunera (20%)
+
+const DEFAULT_STATE = {
+  parts: [
+    {id:'p_cfi',name:'CFI',basePrice:250000},
+    {id:'p_naped',name:'NAPĘD / MZN',basePrice:75000},
+    {id:'p_bak',name:'POWIĘKSZONY BAK',basePrice:65000},
+    {id:'p_licznik',name:'LICZNIK',basePrice:0},
+    {id:'p_zawieszenie',name:'GWINTOWANE ZAWIESZENIE',basePrice:32500},
+    {id:'p_felgrozmiar',name:'ROZMIAR FELG',basePrice:22500},
+    {id:'p_poszprzod',name:'POSZERZENIE PRZÓD',basePrice:18000},
+    {id:'p_posztyl',name:'POSZERZENIE TYŁ',basePrice:15000},
+    {id:'p_abs',name:'ABS',basePrice:15000},
+    {id:'p_radio',name:'RADIO',basePrice:500},
+    {id:'p_swiatla',name:'ŚWIATŁA',basePrice:0},
+    {id:'p_szyby',name:'SZYBY',basePrice:70000},
+    {id:'p_klucze',name:'KLUCZE',basePrice:10000},
+    {id:'p_ogumienie',name:'MODEL OGUMIENIA',basePrice:10000},
+    {id:'p_lpg',name:'LPG',basePrice:35000},
+    {id:'p_rejestracja',name:'REJESTRACJA',basePrice:12000},
+    {id:'p_bodykit',name:'BODYKIT',basePrice:0},
+    {id:'p_felgi',name:'FELGI',basePrice:4000},
+    {id:'p_wykrywacz',name:'WYKRYWACZ',basePrice:2500},
+    {id:'p_ogranicznik',name:'OGRANICZNIK',basePrice:2000},
+    {id:'p_cbradio',name:'CB-RADIO',basePrice:1500},
+    {id:'p_zestaw',name:'ZESTAW',basePrice:100000},
+    {id:'p_turbo',name:'TURBO',basePrice:60000},
+    {id:'p_ecu',name:'ECU',basePrice:40000},
+    {id:'p_silnik',name:'SILNIK',basePrice:60000},
+    {id:'p_aplikacja',name:'APLIKACJA TRANSPORTOWA',basePrice:15000},
+    {id:'p_hydraulika',name:'HYDRAULIKA',basePrice:0},
+    {id:'p_dach',name:'DACH',basePrice:0},
+    {id:'p_spoiler',name:'SPOILER',basePrice:0},
+    {id:'p_progi',name:'PROGI',basePrice:0},
+    {id:'p_zderzprzod',name:'ZDERZAK PRZÓD',basePrice:0},
+    {id:'p_zderztyl',name:'ZDERZAK TYŁ',basePrice:0},
+    {id:'p_halogeny',name:'HALOGENY',basePrice:0},
+    {id:'p_wydechy',name:'WYDECHY',basePrice:0},
+    {id:'p_wariant',name:'WARIANT',basePrice:0}
+  ],
+  vehicles: [
+    {id:'v_buffalo',name:'Buffalo',parts:[
+      {id:'vp1',name:'CFI',basePrice:250000,bought:true},
+      {id:'vp2',name:'NAPĘD / MZN',basePrice:75000,bought:true},
+      {id:'vp3',name:'POWIĘKSZONY BAK',basePrice:65000,bought:true},
+      {id:'vp4',name:'GWINTOWANE ZAWIESZENIE',basePrice:32500,bought:true},
+      {id:'vp5',name:'ABS',basePrice:15000,bought:true},
+      {id:'vp6',name:'RADIO',basePrice:500,bought:true}
+    ]},
+    {id:'v_sultan',name:'Sultan',parts:[
+      {id:'vs1',name:'CFI',basePrice:250000,bought:true},
+      {id:'vs2',name:'NAPĘD / MZN',basePrice:75000,bought:true},
+      {id:'vs3',name:'POWIĘKSZONY BAK',basePrice:65000,bought:true},
+      {id:'vs4',name:'LICZNIK',basePrice:0,bought:false},
+      {id:'vs5',name:'GWINTOWANE ZAWIESZENIE',basePrice:32500,bought:true},
+      {id:'vs6',name:'ROZMIAR FELG',basePrice:22500,bought:true},
+      {id:'vs7',name:'POSZERZENIE PRZÓD',basePrice:18000,bought:true},
+      {id:'vs8',name:'POSZERZENIE TYŁ',basePrice:15000,bought:true},
+      {id:'vs9',name:'ABS',basePrice:15000,bought:true},
+      {id:'vs10',name:'RADIO',basePrice:500,bought:true},
+      {id:'vs11',name:'ŚWIATŁA',basePrice:0,bought:false},
+      {id:'vs12',name:'SZYBY',basePrice:70000,bought:true},
+      {id:'vs13',name:'KLUCZE',basePrice:10000,bought:true},
+      {id:'vs14',name:'MODEL OGUMIENIA',basePrice:10000,bought:true},
+      {id:'vs15',name:'LPG',basePrice:35000,bought:true},
+      {id:'vs16',name:'REJESTRACJA',basePrice:12000,bought:true},
+      {id:'vs17',name:'BODYKIT',basePrice:0,bought:false},
+      {id:'vs18',name:'FELGI',basePrice:4000,bought:true},
+      {id:'vs19',name:'WYKRYWACZ',basePrice:2500,bought:true},
+      {id:'vs20',name:'OGRANICZNIK',basePrice:2000,bought:true},
+      {id:'vs21',name:'CB-RADIO',basePrice:1500,bought:true},
+      {id:'vs22',name:'ZESTAW',basePrice:100000,bought:true},
+      {id:'vs23',name:'TURBO',basePrice:60000,bought:true},
+      {id:'vs24',name:'ECU',basePrice:40000,bought:true},
+      {id:'vs25',name:'SILNIK',basePrice:0,bought:false},
+      {id:'vs26',name:'APLIKACJA TRANSPORTOWA',basePrice:15000,bought:true},
+      {id:'vs27',name:'HYDRAULIKA',basePrice:0,bought:false},
+      {id:'vs28',name:'DACH',basePrice:0,bought:false},
+      {id:'vs29',name:'SPOILER',basePrice:0,bought:false},
+      {id:'vs30',name:'PROGI',basePrice:0,bought:false},
+      {id:'vs31',name:'ZDERZAK PRZÓD',basePrice:0,bought:false},
+      {id:'vs32',name:'ZDERZAK TYŁ',basePrice:0,bought:false},
+      {id:'vs33',name:'HALOGENY',basePrice:0,bought:false},
+      {id:'vs34',name:'WYDECHY',basePrice:0,bought:false},
+      {id:'vs35',name:'WARIANT',basePrice:0,bought:false}
+    ]},
+    {id:'v_sabre',name:'Sabre',parts:[
+      {id:'vsb1',name:'CFI',basePrice:250000,bought:true},
+      {id:'vsb2',name:'NAPĘD / MZN',basePrice:75000,bought:true},
+      {id:'vsb3',name:'POWIĘKSZONY BAK',basePrice:65000,bought:true},
+      {id:'vsb4',name:'GWINTOWANE ZAWIESZENIE',basePrice:32500,bought:true},
+      {id:'vsb5',name:'ROZMIAR FELG',basePrice:22500,bought:true},
+      {id:'vsb6',name:'POSZERZENIE PRZÓD',basePrice:18000,bought:true},
+      {id:'vsb7',name:'POSZERZENIE TYŁ',basePrice:15000,bought:true},
+      {id:'vsb8',name:'ABS',basePrice:15000,bought:true},
+      {id:'vsb9',name:'RADIO',basePrice:500,bought:true},
+      {id:'vsb10',name:'SZYBY',basePrice:70000,bought:true},
+      {id:'vsb11',name:'KLUCZE',basePrice:10000,bought:true},
+      {id:'vsb12',name:'MODEL OGUMIENIA',basePrice:10000,bought:true},
+      {id:'vsb13',name:'LPG',basePrice:35000,bought:true},
+      {id:'vsb14',name:'FELGI',basePrice:4000,bought:true},
+      {id:'vsb15',name:'WYKRYWACZ',basePrice:2500,bought:true},
+      {id:'vsb16',name:'OGRANICZNIK',basePrice:2000,bought:true},
+      {id:'vsb17',name:'CB-RADIO',basePrice:1500,bought:true},
+      {id:'vsb18',name:'ZESTAW',basePrice:100000,bought:true},
+      {id:'vsb19',name:'TURBO',basePrice:60000,bought:true},
+      {id:'vsb20',name:'ECU',basePrice:40000,bought:true},
+      {id:'vsb21',name:'SILNIK',basePrice:76000,bought:true}
+    ]},
+    {id:'v_glendale',name:'Glendale duchomobil',parts:[
+      {id:'vg1',name:'CFI',basePrice:250000,bought:true},
+      {id:'vg2',name:'NAPĘD / MZN',basePrice:75000,bought:true},
+      {id:'vg3',name:'POWIĘKSZONY BAK',basePrice:65000,bought:true},
+      {id:'vg4',name:'GWINTOWANE ZAWIESZENIE',basePrice:32500,bought:true},
+      {id:'vg5',name:'ROZMIAR FELG',basePrice:22500,bought:true},
+      {id:'vg6',name:'POSZERZENIE PRZÓD',basePrice:18000,bought:true},
+      {id:'vg7',name:'POSZERZENIE TYŁ',basePrice:15000,bought:true},
+      {id:'vg8',name:'ABS',basePrice:15000,bought:true},
+      {id:'vg9',name:'RADIO',basePrice:500,bought:true},
+      {id:'vg10',name:'SZYBY',basePrice:70000,bought:true},
+      {id:'vg11',name:'KLUCZE',basePrice:10000,bought:true},
+      {id:'vg12',name:'MODEL OGUMIENIA',basePrice:10000,bought:true},
+      {id:'vg13',name:'WYKRYWACZ',basePrice:2500,bought:true},
+      {id:'vg14',name:'OGRANICZNIK',basePrice:2000,bought:true},
+      {id:'vg15',name:'CB-RADIO',basePrice:1500,bought:true},
+      {id:'vg16',name:'ZESTAW',basePrice:100000,bought:true},
+      {id:'vg17',name:'TURBO',basePrice:60000,bought:true},
+      {id:'vg18',name:'ECU',basePrice:40000,bought:true},
+      {id:'vg19',name:'SILNIK',basePrice:68000,bought:true},
+      {id:'vg20',name:'APLIKACJA TRANSPORTOWA',basePrice:15000,bought:true}
+    ]}
+  ]
+};
+
+let state = { parts: [], vehicles: [] };
+let cloudSaveTimer = null;
+
+function save(){
+  localStorage.setItem(SK, JSON.stringify(state));
+  scheduleCloudSave();
+}
+function load(){
+  const s = localStorage.getItem(SK);
+  if(s){
+    try{
+      const p = JSON.parse(s);
+      if(p && typeof p==='object'){
+        if(Array.isArray(p.parts)) state.parts = p.parts;
+        if(Array.isArray(p.vehicles)) state.vehicles = p.vehicles;
+        return;
+      }
+    }catch(e){}
+  }
+  // brak zapisanych danych — startujemy z importem z arkusza
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  localStorage.setItem(SK, JSON.stringify(state));
+}
+function scheduleCloudSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(pushToCloud, 600);
+}
+async function pushToCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  await supabaseClient.from('nexus_data').upsert({
+    user_id: session.user.id,
+    module: 'projectrpg',
+    data: { state },
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,module' });
+}
+async function pullFromCloud(){
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if(!session) return false;
+  const { data, error } = await supabaseClient
+    .from('nexus_data')
+    .select('data')
+    .eq('user_id', session.user.id)
+    .eq('module', 'projectrpg')
+    .maybeSingle();
+  if(error || !data) return false;
+  const p = data.data;
+  if(p.state && typeof p.state==='object'){
+    if(Array.isArray(p.state.parts)) state.parts = p.state.parts;
+    if(Array.isArray(p.state.vehicles)) state.vehicles = p.state.vehicles;
+  }
+  localStorage.setItem(SK, JSON.stringify(state));
+  return true;
+}
+
+// ══════════════════════════════
+// POMOCNICZE
+// ══════════════════════════════
+function priceWithFee(base){ return Math.round((base||0) * FEE_MULT); }
+function fmt(n){ return '$' + Number(n||0).toLocaleString('pl-PL',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function vehicleSum(v){ return v.parts.filter(p=>p.bought).reduce((s,p)=>s+priceWithFee(p.basePrice),0); }
+function vehicleToBuy(v){ return v.parts.filter(p=>!p.bought).reduce((s,p)=>s+priceWithFee(p.basePrice),0); }
+
+// ══════════════════════════════
+// RENDER
+// ══════════════════════════════
+function renderAll(){ renderSummary(); renderVehicles(); renderPricelist(); }
+
+function renderSummary(){
+  const total = state.vehicles.reduce((s,v)=>s+vehicleSum(v),0);
+  const toBuy = state.vehicles.reduce((s,v)=>s+vehicleToBuy(v),0);
+  document.getElementById('sum-total').textContent = fmt(total);
+  document.getElementById('sum-count').textContent = state.vehicles.length;
+  document.getElementById('sum-tobuy').textContent = fmt(toBuy);
+}
+
+function renderVehicles(){
+  const grid = document.getElementById('vehicles-grid');
+  if(!state.vehicles.length){
+    grid.innerHTML = '<div class="empty">Brak pojazdów. Dodaj pierwszy przyciskiem „+ Dodaj pojazd" powyżej.</div>';
+    return;
+  }
+  grid.innerHTML = state.vehicles.map(v=>{
+    const sum = vehicleSum(v);
+    const partsHtml = v.parts.length ? v.parts.map(p=>{
+      const price = priceWithFee(p.basePrice);
+      return `<div class="part-row ${p.bought?'':'not-bought'}">
+        <div class="part-check ${p.bought?'checked':''}" onclick="togglePartBought('${v.id}','${p.id}')">${p.bought?'✓':''}</div>
+        <div class="part-name">${escapeHtml(p.name)}</div>
+        <div class="part-price">${fmt(price)}</div>
+        <div class="part-actions">
+          <button class="btn-xs" onclick="openEditPart('${v.id}','${p.id}')">✎</button>
+          <button class="btn-xs" onclick="deletePart('${v.id}','${p.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('') : '<div class="empty" style="padding:20px">Brak części</div>';
+    return `<div class="vehicle-card">
+      <div class="vehicle-hd">
+        <div>
+          <div class="vehicle-name">${escapeHtml(v.name)}</div>
+          <div class="vehicle-sum-label">Zainwestowano</div>
+          <div class="vehicle-sum">${fmt(sum)}</div>
+        </div>
+        <button class="vehicle-del" onclick="deleteVehicle('${v.id}')" title="Usuń pojazd">✕</button>
+      </div>
+      <div class="parts-list">${partsHtml}</div>
+      <div class="vehicle-ft"><button class="btn btn-accent" style="width:100%" onclick="openAddPart('${v.id}')">+ Dodaj część</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderPricelist(){
+  const wrap = document.getElementById('pricelist-body');
+  if(!state.parts.length){
+    wrap.innerHTML = '<div class="empty">Cennik jest pusty.</div>';
+    return;
+  }
+  wrap.innerHTML = state.parts.map(p=>`<div class="part-row">
+    <div class="part-name">${escapeHtml(p.name)}</div>
+    <div class="part-price">${fmt(p.basePrice)} <span style="color:var(--muted)">→ ${fmt(priceWithFee(p.basePrice))}</span></div>
+    <div class="part-actions">
+      <button class="btn-xs" onclick="openEditPricelistItem('${p.id}')">✎</button>
+      <button class="btn-xs" onclick="deletePricelistItem('${p.id}')">✕</button>
+    </div>
+  </div>`).join('');
+}
+
+function fillPricePickOptions(){
+  const sel = document.getElementById('part-pick');
+  sel.innerHTML = '<option value="">— własna część —</option>' +
+    state.parts.map(p=>`<option value="${p.id}">${escapeHtml(p.name)} (${fmt(p.basePrice)})</option>`).join('');
+}
+function fillPartFromPricelist(){
+  const id = document.getElementById('part-pick').value;
+  if(!id) return;
+  const p = state.parts.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('part-name').value = p.name;
+  document.getElementById('part-price').value = p.basePrice;
+}
+
+// ══════════════════════════════
+// POJAZDY
+// ══════════════════════════════
+function openAddVehicle(){
+  document.getElementById('veh-name').value = '';
+  openModal('ov-vehicle');
+  setTimeout(()=>document.getElementById('veh-name').focus(),50);
+}
+function confirmAddVehicle(){
+  const name = document.getElementById('veh-name').value.trim();
+  if(!name){ showToast('⚠ Wpisz nazwę pojazdu'); return; }
+  state.vehicles.push({ id:'v'+Date.now(), name, parts:[] });
+  save(); renderAll(); closeModal('ov-vehicle');
+  showToast('✓ Dodano: '+name);
+}
+function deleteVehicle(id){
+  const v = state.vehicles.find(x=>x.id===id); if(!v) return;
+  state.vehicles = state.vehicles.filter(x=>x.id!==id);
+  save(); renderAll();
+  showToast('Usunięto: '+v.name);
+}
+
+// ══════════════════════════════
+// CZĘŚCI POJAZDU
+// ══════════════════════════════
+let partModalVehicleId = null;
+let partModalEditId = null;
+
+function openAddPart(vehicleId){
+  partModalVehicleId = vehicleId;
+  partModalEditId = null;
+  document.getElementById('part-modal-title').textContent = 'Dodaj część';
+  fillPricePickOptions();
+  document.getElementById('part-pick').value = '';
+  document.getElementById('part-name').value = '';
+  document.getElementById('part-price').value = '';
+  document.getElementById('part-bought').checked = false;
+  openModal('ov-part');
+}
+function openEditPart(vehicleId, partId){
+  const v = state.vehicles.find(x=>x.id===vehicleId); if(!v) return;
+  const p = v.parts.find(x=>x.id===partId); if(!p) return;
+  partModalVehicleId = vehicleId;
+  partModalEditId = partId;
+  document.getElementById('part-modal-title').textContent = 'Edytuj część';
+  fillPricePickOptions();
+  document.getElementById('part-pick').value = '';
+  document.getElementById('part-name').value = p.name;
+  document.getElementById('part-price').value = p.basePrice;
+  document.getElementById('part-bought').checked = !!p.bought;
+  openModal('ov-part');
+}
+function confirmPart(){
+  const name = document.getElementById('part-name').value.trim();
+  const price = parseFloat(document.getElementById('part-price').value) || 0;
+  const bought = document.getElementById('part-bought').checked;
+  if(!name){ showToast('⚠ Wpisz nazwę części'); return; }
+  const v = state.vehicles.find(x=>x.id===partModalVehicleId); if(!v) return;
+  if(partModalEditId){
+    const p = v.parts.find(x=>x.id===partModalEditId);
+    if(p){ p.name=name; p.basePrice=price; p.bought=bought; }
+    showToast('✓ Zaktualizowano część');
+  } else {
+    v.parts.push({ id:'vp'+Date.now()+Math.random().toString(36).slice(2,6), name, basePrice:price, bought });
+    showToast('✓ Dodano: '+name);
+  }
+  save(); renderAll(); closeModal('ov-part');
+}
+function togglePartBought(vehicleId, partId){
+  const v = state.vehicles.find(x=>x.id===vehicleId); if(!v) return;
+  const p = v.parts.find(x=>x.id===partId); if(!p) return;
+  p.bought = !p.bought;
+  save(); renderAll();
+}
+function deletePart(vehicleId, partId){
+  const v = state.vehicles.find(x=>x.id===vehicleId); if(!v) return;
+  v.parts = v.parts.filter(x=>x.id!==partId);
+  save(); renderAll();
+}
+
+// ══════════════════════════════
+// CENNIK
+// ══════════════════════════════
+let pricelistEditId = null;
+function openAddPricelistItem(){
+  pricelistEditId = null;
+  document.getElementById('pricelist-modal-title').textContent = 'Nowa część w cenniku';
+  document.getElementById('pl-name').value = '';
+  document.getElementById('pl-price').value = '';
+  openModal('ov-pricelist');
+}
+function openEditPricelistItem(id){
+  const p = state.parts.find(x=>x.id===id); if(!p) return;
+  pricelistEditId = id;
+  document.getElementById('pricelist-modal-title').textContent = 'Edytuj część';
+  document.getElementById('pl-name').value = p.name;
+  document.getElementById('pl-price').value = p.basePrice;
+  openModal('ov-pricelist');
+}
+function confirmPricelistItem(){
+  const name = document.getElementById('pl-name').value.trim();
+  const price = parseFloat(document.getElementById('pl-price').value) || 0;
+  if(!name){ showToast('⚠ Wpisz nazwę części'); return; }
+  if(pricelistEditId){
+    const p = state.parts.find(x=>x.id===pricelistEditId);
+    if(p){ p.name=name; p.basePrice=price; }
+    showToast('✓ Zaktualizowano cennik');
+  } else {
+    state.parts.push({ id:'p'+Date.now()+Math.random().toString(36).slice(2,6), name, basePrice:price });
+    showToast('✓ Dodano do cennika: '+name);
+  }
+  save(); renderAll(); closeModal('ov-pricelist');
+}
+function deletePricelistItem(id){
+  state.parts = state.parts.filter(x=>x.id!==id);
+  save(); renderAll();
+}
+
+// ══════════════════════════════
+// EXPORT / IMPORT
+// ══════════════════════════════
+function exportData(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `projectrpg_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('📤 Wyeksportowano');
+}
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try{
+      const p = JSON.parse(ev.target.result);
+      if(Array.isArray(p.parts)) state.parts = p.parts;
+      if(Array.isArray(p.vehicles)) state.vehicles = p.vehicles;
+      save(); renderAll();
+      showToast('📥 Import OK!');
+    }catch{ showToast('❌ Błąd'); }
+  };
+  reader.readAsText(file, 'utf-8');
+  event.target.value = '';
+}
+
+// ══════════════════════════════
+// UI: TABY, MODALE, TOAST
+// ══════════════════════════════
+function switchTab(n, btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+n).classList.add('active');
+  btn.classList.add('active');
+  renderAll();
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+document.querySelectorAll('.overlay').forEach(ov=>ov.addEventListener('click', e=>{
+  if(e.target===ov) ov.classList.remove('open');
+}));
+
+// ══════════════════════════════
+// INIT
+// ══════════════════════════════
+load();
+renderAll();
+
+requireAuth().then(async session => {
+  if (session) {
+    document.body.style.visibility = 'visible';
+    const emailEl = document.getElementById('user-email');
+    if (emailEl) emailEl.textContent = session.user.email;
+
+    const gotCloudData = await pullFromCloud();
+    if (gotCloudData) renderAll(); // dane z chmury nadpisały lokalne — odśwież widok
+  }
+});
+</script>
+</body>
+</html>
