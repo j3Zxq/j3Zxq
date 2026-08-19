@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<style>body{visibility:hidden}</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNIVERSE WATCHLIST</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --text:#e8e8e8;--muted:rgba(232,232,232,0.38);
+  --accent:#b30000;--accent2:#8b0000;--accent3:#cc1a1a;
+  --coal:#2a2a2a;--coal2:#383838;
+  --gold:#f4c550;--silver:#b0bec5;--bronze:#c47a45;
+  --red:#f07070;--green:#6ee7a0;--yellow:#ffd166;--blue:#60a5fa;--purple:#b30000;
+}
+html, body { height: 100%; }
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(179,0,0,0.35);border-radius:2px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.5;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);pointer-events:none;z-index:9998;}
+
+/* ── NAV ── */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:rgba(10,10,10,0.96);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);}
+.nav::after{content:'';position:absolute;bottom:-1px;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);opacity:0.5;pointer-events:none;}
+.nav-brand{font-family:'Orbitron',monospace;font-size:1em;font-weight:700;letter-spacing:3px;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:10px;text-shadow:0 0 16px rgba(180,0,0,0.35);}
+.nav-logo{width:22px;height:22px;min-width:22px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(180,0,0,0.5));display:block;}
+.nav-brand span{color:var(--muted);font-size:0.75em;font-family:'Rajdhani',sans-serif;letter-spacing:2px;}
+.nav-actions{display:flex;align-items:center;gap:8px;}
+.btn{padding:6px 14px;background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82em;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;clip-path:polygon(6% 0%,100% 0%,94% 100%,0% 100%);}
+.btn:hover{color:var(--text);border-color:var(--accent2);box-shadow:0 0 14px rgba(139,0,0,0.3);}
+.btn-accent{background:var(--accent);color:var(--text);border-color:var(--accent2);font-weight:700;}
+.btn-accent:hover{background:var(--accent2);border-color:var(--accent3);color:var(--text);box-shadow:0 0 20px rgba(139,0,0,0.4);}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1100px;margin:0 auto;padding:28px 24px 60px;}
+
+/* universe selector */
+.universe-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;}
+.universe-tab{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 18px;background:var(--bg2);
+  border:1px solid var(--border2);
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.95em;letter-spacing:1px;
+  color:var(--muted);cursor:pointer;transition:all 0.2s;
+  clip-path:polygon(4% 0%,100% 0%,96% 100%,0% 100%);
+}
+.universe-tab:hover{color:var(--text);border-color:rgba(255,255,255,0.24);}
+.universe-tab.active{color:var(--text);background:var(--accent);border-color:var(--accent2);box-shadow:0 0 16px rgba(139,0,0,0.35);}
+.universe-tab .u-icon{font-size:1.2em;}
+.universe-tab.add-new{border-style:dashed;color:var(--muted);}
+
+/* progress */
+.progress-card{
+  background:var(--bg2);border:1px solid var(--border);padding:20px 24px;margin-bottom:24px;
+  position:relative;overflow:hidden;
+}
+.progress-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 0% 0%, rgba(179,0,0,0.08), transparent 60%);pointer-events:none;}
+.progress-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;position:relative;}
+.progress-title{font-family:'Orbitron',monospace;font-size:1em;letter-spacing:2px;color:var(--text);}
+.progress-nums{font-family:'Rajdhani',sans-serif;font-weight:600;color:var(--muted);font-size:0.9em;}
+.progress-pct{font-family:'Orbitron',monospace;color:var(--accent3);font-size:1.4em;font-weight:700;}
+.progress-bar-track{height:8px;background:var(--bg3);border:1px solid var(--border);position:relative;overflow:hidden;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent3));transition:width 0.4s ease;box-shadow:0 0 10px rgba(204,26,26,0.5);}
+
+/* items list */
+.phase-group{margin-bottom:22px;}
+.phase-label{
+  font-family:'Orbitron',monospace;font-size:0.78em;letter-spacing:3px;
+  color:var(--gold);margin-bottom:10px;padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+  text-transform:uppercase;
+}
+.item-row{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 16px;background:var(--bg2);
+  border:1px solid var(--border);border-left:3px solid transparent;
+  margin-bottom:6px;transition:all 0.2s;
+}
+.item-row:hover{border-color:var(--border2);border-left-color:var(--accent2);}
+.item-row.watched{opacity:0.5;}
+.item-row.watched .item-title{text-decoration:line-through;text-decoration-color:var(--accent3);}
+.item-check{
+  width:22px;height:22px;min-width:22px;border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-size:0.85em;color:var(--bg);transition:all 0.15s;
+}
+.item-row.watched .item-check{background:var(--accent);border-color:var(--accent2);color:var(--text);}
+.item-order{font-family:'Orbitron',monospace;color:var(--muted);font-size:0.8em;min-width:26px;}
+.item-title{flex:1;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:1.02em;letter-spacing:0.3px;}
+.item-type{
+  font-family:'Rajdhani',sans-serif;font-size:0.72em;letter-spacing:1px;text-transform:uppercase;
+  padding:2px 8px;border:1px solid var(--border2);color:var(--muted);
+}
+.item-type.series{color:var(--blue);border-color:rgba(96,165,250,0.35);}
+.item-type.movie{color:var(--gold);border-color:rgba(244,197,80,0.35);}
+
+/* add item panel */
+.add-panel{
+  background:var(--bg2);border:1px solid var(--border);padding:20px 24px;margin-top:28px;
+}
+.add-panel h3{font-family:'Orbitron',monospace;font-size:0.85em;letter-spacing:2px;color:var(--text);margin-bottom:14px;}
+.add-form{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-family:'Rajdhani',sans-serif;font-size:0.75em;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+.field input,.field select{
+  padding:9px 10px;background:rgba(255,255,255,0.03);border:1px solid var(--border2);
+  color:var(--text);font-family:'Rajdhani',sans-serif;font-size:0.95em;border-radius:2px;
+}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent2);}
+
+.empty-state{padding:40px 20px;text-align:center;color:var(--muted);font-family:'Rajdhani',sans-serif;letter-spacing:1px;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg2);border:1px solid var(--accent2);padding:12px 22px;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:1px;opacity:0;pointer-events:none;transition:all 0.3s;z-index:500;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media (max-width:640px){
+  .add-form{grid-template-columns:1fr 1fr;}
+  .wrap{padding:20px 14px 50px;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-brand" href="index.html"><img class="nav-logo" src="akatsuki_logo.png" alt="Akatsuki Logo"> <span>NEXUS /</span> UNIVERSE WATCHLIST</a>
+  <div class="nav-actions">
+    <span id="user-email" style="align-self:center;font-size:0.75em;letter-spacing:1px;color:var(--muted);margin-left:6px;"></span>
+    <button class="btn" id="logout-btn" onclick="logout()">Wyloguj</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="universe-tabs" id="universe-tabs">
+    <!-- generowane dynamicznie -->
+  </div>
+
+  <div class="progress-card">
+    <div class="progress-top">
+      <div>
+        <div class="progress-title" id="progress-title">—</div>
+        <div class="progress-nums" id="progress-nums">0 / 0 obejrzane</div>
+      </div>
+      <div class="progress-pct" id="progress-pct">0%</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div></div>
+  </div>
+
+  <div id="items-container">
+    <div class="empty-state">Ładowanie…</div>
+  </div>
+
+  <div class="add-panel">
+    <h3>+ Dodaj nową pozycję</h3>
+    <div class="add-form">
+      <div class="field">
+        <label>Tytuł</label>
+        <input type="text" id="new-title" placeholder="np. Kapitan Ameryka: Nowy Świat">
+      </div>
+      <div class="field">
+        <label>Kolejność</label>
+        <input type="number" id="new-order" placeholder="46">
+      </div>
+      <div class="field">
+        <label>Faza / etykieta</label>
+        <input type="text" id="new-phase" placeholder="Faza 5">
+      </div>
+      <div class="field">
+        <label>Typ</label>
+        <select id="new-type">
+          <option value="movie">Film</option>
+          <option value="series">Serial</option>
+        </select>
+      </div>
+      <button class="btn btn-accent" onclick="addItem()">Dodaj</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const supabaseClient = supabase.createClient(
+  'https://TWOJ-PROJEKT.supabase.co',
+  'TWOJ-ANON-KEY'
+);
+
+let universes = [];
+let currentUniverseId = null;
+let items = [];
+let progressMap = {}; // item_id -> watched (bool)
+let currentUserId = null;
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+async function loadUniverses(){
+  const { data, error } = await supabaseClient
+    .from('universes')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if(error){ showToast('❌ Błąd wczytywania uniwersów'); return; }
+  universes = data || [];
+  renderUniverseTabs();
+  if(universes.length && !currentUniverseId){
+    currentUniverseId = universes[0].id;
+  }
+  if(currentUniverseId) await loadUniverseData(currentUniverseId);
+}
+
+function renderUniverseTabs(){
+  const wrap = document.getElementById('universe-tabs');
+  wrap.innerHTML = '';
+  universes.forEach(u => {
+    const el = document.createElement('div');
+    el.className = 'universe-tab' + (u.id === currentUniverseId ? ' active' : '');
+    el.innerHTML = `<span class="u-icon">${u.icon || '🎬'}</span> ${u.name}`;
+    el.onclick = () => selectUniverse(u.id);
+    wrap.appendChild(el);
+  });
+  const addEl = document.createElement('div');
+  addEl.className = 'universe-tab add-new';
+  addEl.textContent = '+ Nowe uniwersum';
+  addEl.onclick = addUniverse;
+  wrap.appendChild(addEl);
+}
+
+async function selectUniverse(id){
+  currentUniverseId = id;
+  renderUniverseTabs();
+  await loadUniverseData(id);
+}
+
+async function addUniverse(){
+  const name = prompt('Nazwa nowego uniwersum (np. DCU, Star Wars):');
+  if(!name || !name.trim()) return;
+  const icon = prompt('Emoji-ikona (opcjonalnie):', '🎬') || '🎬';
+  const { data, error } = await supabaseClient
+    .from('universes')
+    .insert({ name: name.trim(), icon })
+    .select()
+    .single();
+  if(error){ showToast('❌ Nie udało się dodać uniwersum'); return; }
+  universes.push(data);
+  currentUniverseId = data.id;
+  renderUniverseTabs();
+  await loadUniverseData(data.id);
+  showToast('✅ Dodano uniwersum');
+}
+
+async function loadUniverseData(universeId){
+  document.getElementById('items-container').innerHTML = '<div class="empty-state">Ładowanie…</div>';
+
+  const { data: itemsData, error: itemsErr } = await supabaseClient
+    .from('universe_items')
+    .select('*')
+    .eq('universe_id', universeId)
+    .order('release_order', { ascending: true });
+
+  if(itemsErr){ showToast('❌ Błąd wczytywania pozycji'); return; }
+  items = itemsData || [];
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  currentUserId = session?.user?.id;
+
+  progressMap = {};
+  if(currentUserId && items.length){
+    const itemIds = items.map(i => i.id);
+    const { data: progData, error: progErr } = await supabaseClient
+      .from('user_universe_progress')
+      .select('item_id, watched')
+      .eq('user_id', currentUserId)
+      .in('item_id', itemIds);
+    if(!progErr && progData){
+      progData.forEach(p => { progressMap[p.item_id] = p.watched; });
+    }
+  }
+
+  renderItems();
+  renderProgress();
+}
+
+function renderProgress(){
+  const u = universes.find(u => u.id === currentUniverseId);
+  document.getElementById('progress-title').textContent = u ? u.name : '—';
+  const total = items.length;
+  const done = items.filter(i => progressMap[i.id]).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById('progress-nums').textContent = `${done} / ${total} obejrzane`;
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-bar-fill').style.width = pct + '%';
+}
+
+function renderItems(){
+  const container = document.getElementById('items-container');
+  if(!items.length){
+    container.innerHTML = '<div class="empty-state">Brak pozycji w tym uniwersum. Dodaj pierwszą poniżej ⬇</div>';
+    return;
+  }
+
+  // grupowanie po phase, zachowując kolejność chronologiczną
+  const groups = [];
+  let lastPhase = null;
+  items.forEach(item => {
+    const phase = item.phase || 'Bez etykiety';
+    if(phase !== lastPhase){
+      groups.push({ phase, items: [] });
+      lastPhase = phase;
+    }
+    groups[groups.length-1].items.push(item);
+  });
+
+  container.innerHTML = groups.map(g => `
+    <div class="phase-group">
+      <div class="phase-label">${g.phase}</div>
+      ${g.items.map(item => {
+        const watched = !!progressMap[item.id];
+        return `
+        <div class="item-row ${watched ? 'watched' : ''}" data-item-id="${item.id}">
+          <div class="item-check" onclick="toggleWatched('${item.id}')">${watched ? '✓' : ''}</div>
+          <div class="item-order">${item.release_order}</div>
+          <div class="item-title">${escapeHtml(item.title)}</div>
+          <div class="item-type ${item.media_type === 'series' ? 'series' : 'movie'}">${item.media_type === 'series' ? 'Serial' : 'Film'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+async function toggleWatched(itemId){
+  if(!currentUserId) return;
+  const newState = !progressMap[itemId];
+  progressMap[itemId] = newState; // optymistyczna aktualizacja UI
+
+  const row = document.querySelector(`.item-row[data-item-id="${itemId}"]`);
+  if(row){
+    row.classList.toggle('watched', newState);
+    row.querySelector('.item-check').textContent = newState ? '✓' : '';
+  }
+  renderProgress();
+
+  const { error } = await supabaseClient
+    .from('user_universe_progress')
+    .upsert({
+      user_id: currentUserId,
+      item_id: itemId,
+      watched: newState,
+      watched_at: newState ? new Date().toISOString() : null
+    }, { onConflict: 'user_id,item_id' });
+
+  if(error){
+    showToast('❌ Błąd zapisu — spróbuj ponownie');
+    progressMap[itemId] = !newState; // cofnij przy błędzie
+    renderItems();
+    renderProgress();
+  }
+}
+
+async function addItem(){
+  const title = document.getElementById('new-title').value.trim();
+  const order = parseInt(document.getElementById('new-order').value, 10);
+  const phase = document.getElementById('new-phase').value.trim();
+  const mediaType = document.getElementById('new-type').value;
+
+  if(!title || isNaN(order)){
+    showToast('⚠ Podaj tytuł i kolejność');
+    return;
+  }
+  if(!currentUniverseId){
+    showToast('⚠ Wybierz najpierw uniwersum');
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('universe_items')
+    .insert({
+      universe_id: currentUniverseId,
+      title,
+      release_order: order,
+      phase: phase || null,
+      media_type: mediaType
+    })
+    .select()
+    .single();
+
+  if(error){ showToast('❌ Nie udało się dodać pozycji'); return; }
+
+  items.push(data);
+  items.sort((a,b) => a.release_order - b.release_order);
+  renderItems();
+  renderProgress();
+
+  document.getElementById('new-title').value = '';
+  document.getElementById('new-order').value = '';
+  document.getElementById('new-phase').value = '';
+  showToast('✅ Dodano pozycję');
+}
+
+requireAuth().then(async session => {
+  if (session) {
+    document.body.style.visibility = 'visible';
+    const emailEl = document.getElementById('user-email');
+    if (emailEl) emailEl.textContent = session.user.email;
+    await loadUniverses();
+  }
+});
+</script>
+</body>
+</html>
