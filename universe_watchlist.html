@@ -189,10 +189,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 <div class="toast" id="toast"></div>
 
 <script>
-const supabaseClient = supabase.createClient(
-  'https://riqfubddbyvsbqqcpzuc.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpcWZ1YmRkYnl2c2JxcWNwenVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5ODc2MzksImV4cCI6MjEwMjU2MzYzOX0.r4tiEvvzH6o5aw_TvgTPhZ7AKSkKlXlDD6KPYQUbHG8'
-);
+// supabaseClient jest już utworzony w auth.js — nie deklarujemy go tu ponownie,
+// żeby uniknąć "Identifier 'supabaseClient' has already been declared"
 
 let universes = [];
 let currentUniverseId = null;
