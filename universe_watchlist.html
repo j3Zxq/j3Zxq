@@ -55,7 +55,17 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .universe-tab:hover{color:var(--text);border-color:rgba(255,255,255,0.24);}
 .universe-tab.active{color:var(--text);background:var(--accent);border-color:var(--accent2);box-shadow:0 0 16px rgba(139,0,0,0.35);}
 .universe-tab .u-icon{font-size:1.2em;}
+.universe-tab .u-icon img{width:1.1em;height:1.1em;object-fit:contain;display:block;border-radius:2px;}
 .universe-tab.add-new{border-style:dashed;color:var(--muted);}
+.universe-tab{position:relative;padding-right:30px;}
+.universe-tab.add-new{padding-right:18px;}
+.u-tab-delete{
+  position:absolute;top:50%;right:8px;transform:translateY(-50%);
+  width:16px;height:16px;display:flex;align-items:center;justify-content:center;
+  font-size:0.85em;color:var(--muted);opacity:0;transition:all 0.15s;border-radius:2px;
+}
+.universe-tab:hover .u-tab-delete{opacity:0.85;}
+.u-tab-delete:hover{color:var(--red);opacity:1 !important;background:rgba(240,112,112,0.15);}
 
 /* progress */
 .progress-card{
@@ -101,6 +111,13 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 }
 .item-type.series{color:var(--blue);border-color:rgba(96,165,250,0.35);}
 .item-type.movie{color:var(--gold);border-color:rgba(244,197,80,0.35);}
+.item-delete{
+  width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);cursor:pointer;font-size:1em;border-radius:2px;transition:all 0.15s;
+  opacity:0;
+}
+.item-row:hover .item-delete{opacity:1;}
+.item-delete:hover{color:var(--red);background:rgba(240,112,112,0.12);}
 
 /* add item panel */
 .add-panel{
@@ -219,14 +236,22 @@ async function loadUniverses(){
   if(currentUniverseId) await loadUniverseData(currentUniverseId);
 }
 
+function renderUniverseIcon(icon){
+  if(icon && /^https?:\/\//i.test(icon.trim())){
+    return `<img src="${escapeHtml(icon.trim())}" alt="">`;
+  }
+  return escapeHtml(icon || '🎬');
+}
+
 function renderUniverseTabs(){
   const wrap = document.getElementById('universe-tabs');
   wrap.innerHTML = '';
   universes.forEach(u => {
     const el = document.createElement('div');
     el.className = 'universe-tab' + (u.id === currentUniverseId ? ' active' : '');
-    el.innerHTML = `<span class="u-icon">${u.icon || '🎬'}</span> ${u.name}`;
-    el.onclick = () => selectUniverse(u.id);
+    el.innerHTML = `<span class="u-icon">${renderUniverseIcon(u.icon)}</span> ${escapeHtml(u.name)} <span class="u-tab-delete" title="Usuń uniwersum">✕</span>`;
+    el.querySelector('.u-tab-delete').onclick = (e) => { e.stopPropagation(); deleteUniverse(u.id, u.name); };
+    el.addEventListener('click', (e) => { if(!e.target.classList.contains('u-tab-delete')) selectUniverse(u.id); });
     wrap.appendChild(el);
   });
   const addEl = document.createElement('div');
@@ -245,7 +270,7 @@ async function selectUniverse(id){
 async function addUniverse(){
   const name = prompt('Nazwa nowego uniwersum (np. DCU, Star Wars):');
   if(!name || !name.trim()) return;
-  const icon = prompt('Emoji-ikona (opcjonalnie):', '🎬') || '🎬';
+  const icon = prompt('Ikona: wklej emoji (🎬) albo link do obrazka logo (https://...)', '🎬') || '🎬';
   const { data, error } = await supabaseClient
     .from('universes')
     .insert({ name: name.trim(), icon })
@@ -332,6 +357,7 @@ function renderItems(){
           <div class="item-order">${item.release_order}</div>
           <div class="item-title">${escapeHtml(item.title)}</div>
           <div class="item-type ${item.media_type === 'series' ? 'series' : 'movie'}">${item.media_type === 'series' ? 'Serial' : 'Film'}</div>
+          <div class="item-delete" title="Usuń pozycję" onclick="deleteItem('${item.id}', '${escapeHtml(item.title).replace(/'/g,"\\'")}')">✕</div>
         </div>`;
       }).join('')}
     </div>
@@ -411,6 +437,61 @@ async function addItem(){
   document.getElementById('new-order').value = '';
   document.getElementById('new-phase').value = '';
   showToast('✅ Dodano pozycję');
+}
+
+async function deleteItem(itemId, title){
+  if(!confirm(`Usunąć pozycję "${title}"? Tej operacji nie można cofnąć.`)) return;
+
+  // najpierw usuń powiązane rekordy postępu (progresu) dla tej pozycji, żeby nie kolidowały z kluczem obcym
+  await supabaseClient.from('user_universe_progress').delete().eq('item_id', itemId);
+
+  const { error } = await supabaseClient.from('universe_items').delete().eq('id', itemId);
+  if(error){ showToast('❌ Nie udało się usunąć pozycji'); return; }
+
+  items = items.filter(i => i.id !== itemId);
+  delete progressMap[itemId];
+  renderItems();
+  renderProgress();
+  showToast('🗑️ Usunięto pozycję');
+}
+
+async function deleteUniverse(universeId, name){
+  if(!confirm(`Usunąć całe uniwersum "${name}" wraz ze WSZYSTKIMI jego pozycjami i postępem oglądania? Tej operacji nie można cofnąć.`)) return;
+
+  // pobierz id wszystkich pozycji w tym uniwersum, żeby posprzątać powiązany postęp
+  const { data: itemRows, error: itemsFetchErr } = await supabaseClient
+    .from('universe_items')
+    .select('id')
+    .eq('universe_id', universeId);
+
+  if(itemsFetchErr){ showToast('❌ Błąd podczas usuwania uniwersum'); return; }
+
+  const itemIds = (itemRows || []).map(r => r.id);
+  if(itemIds.length){
+    await supabaseClient.from('user_universe_progress').delete().in('item_id', itemIds);
+    const { error: itemsDelErr } = await supabaseClient.from('universe_items').delete().eq('universe_id', universeId);
+    if(itemsDelErr){ showToast('❌ Nie udało się usunąć pozycji uniwersum'); return; }
+  }
+
+  const { error: uniDelErr } = await supabaseClient.from('universes').delete().eq('id', universeId);
+  if(uniDelErr){ showToast('❌ Nie udało się usunąć uniwersum'); return; }
+
+  universes = universes.filter(u => u.id !== universeId);
+
+  if(currentUniverseId === universeId){
+    currentUniverseId = universes.length ? universes[0].id : null;
+    items = [];
+    progressMap = {};
+    if(currentUniverseId){
+      await loadUniverseData(currentUniverseId);
+    } else {
+      document.getElementById('items-container').innerHTML = '<div class="empty-state">Brak uniwersów. Dodaj pierwsze powyżej ⬆</div>';
+      renderProgress();
+    }
+  }
+
+  renderUniverseTabs();
+  showToast('🗑️ Usunięto uniwersum');
 }
 
 requireAuth().then(async session => {
