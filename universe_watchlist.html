@@ -57,14 +57,18 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .universe-tab .u-icon{font-size:1.2em;}
 .universe-tab .u-icon img{width:1.1em;height:1.1em;object-fit:contain;display:block;border-radius:2px;}
 .universe-tab.add-new{border-style:dashed;color:var(--muted);}
-.universe-tab{position:relative;padding-right:30px;}
+.universe-tab{position:relative;padding-right:52px;}
 .universe-tab.add-new{padding-right:18px;}
-.u-tab-delete{
-  position:absolute;top:50%;right:8px;transform:translateY(-50%);
+.u-tab-edit,.u-tab-delete{
+  position:absolute;top:50%;
   width:16px;height:16px;display:flex;align-items:center;justify-content:center;
-  font-size:0.85em;color:var(--muted);opacity:0;transition:all 0.15s;border-radius:2px;
+  font-size:0.8em;color:var(--muted);opacity:0;transition:all 0.15s;border-radius:2px;
+  transform:translateY(-50%);
 }
-.universe-tab:hover .u-tab-delete{opacity:0.85;}
+.u-tab-delete{right:8px;}
+.u-tab-edit{right:28px;}
+.universe-tab:hover .u-tab-edit,.universe-tab:hover .u-tab-delete{opacity:0.85;}
+.u-tab-edit:hover{color:var(--text);opacity:1 !important;background:rgba(255,255,255,0.1);}
 .u-tab-delete:hover{color:var(--red);opacity:1 !important;background:rgba(240,112,112,0.15);}
 
 /* progress */
@@ -118,6 +122,13 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 }
 .item-row:hover .item-delete{opacity:1;}
 .item-delete:hover{color:var(--red);background:rgba(240,112,112,0.12);}
+.item-edit{
+  width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);cursor:pointer;font-size:0.9em;border-radius:2px;transition:all 0.15s;
+  opacity:0;
+}
+.item-row:hover .item-edit{opacity:1;}
+.item-edit:hover{color:var(--text);background:rgba(255,255,255,0.1);}
 
 /* add item panel */
 .add-panel{
@@ -249,9 +260,10 @@ function renderUniverseTabs(){
   universes.forEach(u => {
     const el = document.createElement('div');
     el.className = 'universe-tab' + (u.id === currentUniverseId ? ' active' : '');
-    el.innerHTML = `<span class="u-icon">${renderUniverseIcon(u.icon)}</span> ${escapeHtml(u.name)} <span class="u-tab-delete" title="Usuń uniwersum">✕</span>`;
+    el.innerHTML = `<span class="u-icon">${renderUniverseIcon(u.icon)}</span> ${escapeHtml(u.name)} <span class="u-tab-edit" title="Edytuj uniwersum">✎</span><span class="u-tab-delete" title="Usuń uniwersum">✕</span>`;
+    el.querySelector('.u-tab-edit').onclick = (e) => { e.stopPropagation(); editUniverse(u); };
     el.querySelector('.u-tab-delete').onclick = (e) => { e.stopPropagation(); deleteUniverse(u.id, u.name); };
-    el.addEventListener('click', (e) => { if(!e.target.classList.contains('u-tab-delete')) selectUniverse(u.id); });
+    el.addEventListener('click', (e) => { if(!e.target.classList.contains('u-tab-delete') && !e.target.classList.contains('u-tab-edit')) selectUniverse(u.id); });
     wrap.appendChild(el);
   });
   const addEl = document.createElement('div');
@@ -357,6 +369,7 @@ function renderItems(){
           <div class="item-order">${item.release_order}</div>
           <div class="item-title">${escapeHtml(item.title)}</div>
           <div class="item-type ${item.media_type === 'series' ? 'series' : 'movie'}">${item.media_type === 'series' ? 'Serial' : 'Film'}</div>
+          <div class="item-edit" title="Edytuj pozycję" onclick="editItem('${item.id}')">✎</div>
           <div class="item-delete" title="Usuń pozycję" onclick="deleteItem('${item.id}', '${escapeHtml(item.title).replace(/'/g,"\\'")}')">✕</div>
         </div>`;
       }).join('')}
@@ -437,6 +450,74 @@ async function addItem(){
   document.getElementById('new-order').value = '';
   document.getElementById('new-phase').value = '';
   showToast('✅ Dodano pozycję');
+}
+
+async function editUniverse(u){
+  const newName = prompt('Nowa nazwa uniwersum:', u.name);
+  if(newName === null) return; // anulowano
+  const newIcon = prompt('Ikona: emoji (🎬) albo link do obrazka logo (https://...)', u.icon || '🎬');
+  if(newIcon === null) return; // anulowano
+
+  const trimmedName = newName.trim();
+  if(!trimmedName){ showToast('⚠ Nazwa nie może być pusta'); return; }
+
+  const { error } = await supabaseClient
+    .from('universes')
+    .update({ name: trimmedName, icon: newIcon.trim() || '🎬' })
+    .eq('id', u.id);
+
+  if(error){ showToast('❌ Nie udało się zapisać zmian'); return; }
+
+  u.name = trimmedName;
+  u.icon = newIcon.trim() || '🎬';
+  renderUniverseTabs();
+  renderProgress();
+  showToast('✅ Zapisano zmiany');
+}
+
+async function editItem(itemId){
+  const item = items.find(i => i.id === itemId);
+  if(!item) return;
+
+  const newTitle = prompt('Tytuł:', item.title);
+  if(newTitle === null) return;
+  const trimmedTitle = newTitle.trim();
+  if(!trimmedTitle){ showToast('⚠ Tytuł nie może być pusty'); return; }
+
+  const newOrderRaw = prompt('Kolejność:', item.release_order);
+  if(newOrderRaw === null) return;
+  const newOrder = parseInt(newOrderRaw, 10);
+  if(isNaN(newOrder)){ showToast('⚠ Kolejność musi być liczbą'); return; }
+
+  const newPhaseRaw = prompt('Faza / etykieta (puste = brak):', item.phase || '');
+  if(newPhaseRaw === null) return;
+  const newPhase = newPhaseRaw.trim() || null;
+
+  const newTypeRaw = prompt('Typ: wpisz "movie" (film) albo "series" (serial):', item.media_type);
+  if(newTypeRaw === null) return;
+  const newType = newTypeRaw.trim().toLowerCase() === 'series' ? 'series' : 'movie';
+
+  const { error } = await supabaseClient
+    .from('universe_items')
+    .update({
+      title: trimmedTitle,
+      release_order: newOrder,
+      phase: newPhase,
+      media_type: newType
+    })
+    .eq('id', itemId);
+
+  if(error){ showToast('❌ Nie udało się zapisać zmian'); return; }
+
+  item.title = trimmedTitle;
+  item.release_order = newOrder;
+  item.phase = newPhase;
+  item.media_type = newType;
+
+  items.sort((a,b) => a.release_order - b.release_order);
+  renderItems();
+  renderProgress();
+  showToast('✅ Zapisano zmiany');
 }
 
 async function deleteItem(itemId, title){
