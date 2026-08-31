@@ -356,6 +356,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <input class="pi-input" id="b-ppi" type="number" min="1" placeholder="?" oninput="updPct()">
         <span class="pi-pct" id="pi-pct"></span>
       </div>
+      <div class="fg"><label class="fl">Okładka — URL obrazka (opcjonalnie, gdy brak w wyszukiwarce)</label><input class="fi" id="b-cover-url" placeholder="https://…jpg" oninput="previewManualCover()"></div>
       <div class="fg"><label class="fl">Notatka (opcjonalnie)</label><input class="fi" id="b-note" placeholder="przemyślenia…"></div>
       <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(179,0,0,0.05);border:1px solid rgba(179,0,0,0.18);cursor:pointer;user-select:none;" onclick="document.getElementById('b-reread').click()">
         <input type="checkbox" id="b-reread" style="accent-color:var(--amber);width:15px;height:15px;cursor:pointer;">
@@ -444,6 +445,7 @@ async function pullFromCloud(){
 }
 
 function coverUrl(id,sz='M'){return id?`https://covers.openlibrary.org/b/id/${id}-${sz}.jpg`:'';}
+function bookCover(b,sz='M'){return b.coverUrl||coverUrl(b.coverId,sz);}
 function pct(b){if(b.status==='read')return 100;if(b.status==='reading'&&b.cur&&b.pages)return Math.round(b.cur/b.pages*100);return 0;}
 
 function renderAll(){renderShelf();renderBLGrid();renderStats();updateDL();}
@@ -481,7 +483,7 @@ function renderShelf(){
 }
 
 function cardHTML(b){
-  const cover=coverUrl(b.coverId,'M');
+  const cover=bookCover(b,'M');
   const p=pct(b);
   const imgHTML=cover
     ?`<img class="book-cover" src="${cover}" alt="" loading="lazy" onerror="this.outerHTML='<div class=book-cover-ph><div class=bicon>📖</div><div class=btitle></div></div>'">`
@@ -524,7 +526,7 @@ function cardHTML(b){
 }
 
 function rowHTML(b){
-  const cover=coverUrl(b.coverId,'S');
+  const cover=bookCover(b,'S');
   const img=cover?`<img class="list-thumb" src="${cover}" alt="" loading="lazy" onerror="this.outerHTML='<div class=list-thumb-ph>📖</div>'">`:`<div class="list-thumb-ph">📖</div>`;
   const sc=b.status==='read'?'s-read':'s-reading';
   const st=b.status==='read'?'Przeczytana':'W trakcie';
@@ -567,7 +569,7 @@ function renderSidebar(){
   const mA=Math.max(...Object.values(byA),1);
   document.getElementById('shelf-sidebar').innerHTML=`
     ${rn.length?`<div class="reading-now-card"><div class="reading-now-title">📖 Teraz czytam</div>${rn.map(b=>{
-      const p2=pct(b);const cover=coverUrl(b.coverId,'S');
+      const p2=pct(b);const cover=bookCover(b,'S');
       return`<div class="rn-item">${cover?`<img class="rn-cover" src="${cover}" alt="" onerror="this.outerHTML='<div class=rn-cover-ph>📖</div>'">`:`<div class="rn-cover-ph">📖</div>`}
       <div style="flex:1"><div class="rn-title">${b.title}</div><div class="rn-author">${b.author||''}</div>${b.pages?`<div class="rn-bar-wrap"><div class="rn-bar" style="width:${p2}%"></div></div><div class="rn-pct">${b.cur||0}/${b.pages} · ${p2}%</div>`:''}</div></div>`;
     }).join('')}</div>`:''}
@@ -659,16 +661,27 @@ function openEdit(id){
   document.getElementById('b-reread').checked=!!b.reread;
   document.getElementById('b-ol-key').value=b.olKey||'';
   document.getElementById('b-cover-id').value=b.coverId||'';
+  document.getElementById('b-cover-url').value=b.coverUrl||'';
   document.getElementById('b-cur').value=b.cur||'';
   document.getElementById('b-ppi').value=b.pages||'';
   handleStatus(b.status);
-  if(b.coverId){document.getElementById('sel-cover').src=coverUrl(b.coverId,'S');document.getElementById('sel-title').textContent=b.title;document.getElementById('sel-meta').textContent=`${b.author||''} · ${b.year||''}`;document.getElementById('sel-preview').style.display='flex';}
+  if(b.coverUrl){document.getElementById('sel-cover').src=b.coverUrl;document.getElementById('sel-title').textContent=b.title;document.getElementById('sel-meta').textContent=`${b.author||''} · ${b.year||''}`;document.getElementById('sel-preview').style.display='flex';}
+  else if(b.coverId){document.getElementById('sel-cover').src=coverUrl(b.coverId,'S');document.getElementById('sel-title').textContent=b.title;document.getElementById('sel-meta').textContent=`${b.author||''} · ${b.year||''}`;document.getElementById('sel-preview').style.display='flex';}
   document.getElementById('ol-search').value='';
   document.getElementById('ol-results').classList.remove('show');
   openModal('ov-book');
 }
+function previewManualCover(){
+  const url=document.getElementById('b-cover-url').value.trim();
+  if(url){
+    document.getElementById('sel-cover').src=url;
+    document.getElementById('sel-title').textContent=document.getElementById('b-title').value||'(bez tytułu)';
+    document.getElementById('sel-meta').textContent=`${document.getElementById('b-author').value||''} · ${document.getElementById('b-year').value||''}`;
+    document.getElementById('sel-preview').style.display='flex';
+  }
+}
 function clearBForm(){
-  ['b-title','b-author','b-year','b-pages','b-genre','b-note','b-ol-key','b-cover-id','b-cur','b-ppi'].forEach(id=>document.getElementById(id).value='');
+  ['b-title','b-author','b-year','b-pages','b-genre','b-note','b-ol-key','b-cover-id','b-cover-url','b-cur','b-ppi'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('b-status').value='read';
   document.getElementById('b-date').value=new Date().getFullYear();
   document.getElementById('b-reread').checked=false;
@@ -707,6 +720,7 @@ function confirmBook(){
     reread:document.getElementById('b-reread').checked,
     olKey:document.getElementById('b-ol-key').value||null,
     coverId:document.getElementById('b-cover-id').value||null,
+    coverUrl:document.getElementById('b-cover-url').value.trim()||null,
     cur:status==='reading'?(parseInt(document.getElementById('b-cur').value)||0):null
   };
   if(editBookId){const i=state.books.findIndex(x=>x.id===editBookId);if(i>=0)state.books[i]=book;showToast('✓ Zaktualizowano: '+title);}
