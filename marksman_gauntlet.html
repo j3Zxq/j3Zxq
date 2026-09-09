@@ -294,6 +294,15 @@
         }
 
         /* slot machine */
+        .champ-name.loading {
+            animation: loadingPulse 1s ease-in-out infinite;
+            font-size: 1.1em !important;
+            letter-spacing: 3px !important;
+        }
+        @keyframes loadingPulse {
+            0%,100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
         .slot-wrapper {
             overflow: hidden;
             height: 80px;
@@ -1416,10 +1425,6 @@ async function runSlotMachine(pool, final) {
     const reel = document.getElementById('slot-reel');
     const champName = document.getElementById('champ-name');
 
-    champName.style.display = 'none';
-    wrapper.style.display = 'flex';
-    reel.innerHTML = '';
-
     const names = pool.map(c => c.name);
     const spinCount = 18;
     const items = [];
@@ -1427,6 +1432,13 @@ async function runSlotMachine(pool, final) {
         items.push(names[Math.floor(Math.random() * names.length)]);
     }
     items.push(final.name);
+
+    // pokaż krótki loader zamiast pustej czarnej szyby, dopóki ikony się nie pobiorą
+    champName.style.display = 'block';
+    champName.classList.add('loading');
+    champName.textContent = 'LOSOWANIE…';
+    wrapper.style.display = 'none';
+    reel.innerHTML = '';
 
     // preload all icons so no blank frames mid-spin
     await Promise.all(items.map(name => new Promise(res => {
@@ -1451,6 +1463,11 @@ async function runSlotMachine(pool, final) {
         div.appendChild(img);
         reel.appendChild(div);
     });
+
+    // dopiero teraz — z gotową, wypełnioną szybą — pokazujemy slot machine
+    champName.classList.remove('loading');
+    champName.style.display = 'none';
+    wrapper.style.display = 'flex';
 
     const itemH = 80;
     // stop so the LAST item (final champion) is centred in the window –
