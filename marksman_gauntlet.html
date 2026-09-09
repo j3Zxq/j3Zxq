@@ -1496,21 +1496,21 @@ async function runSlotMachine(pool, final) {
     });
 
     // slot is now showing the final champion – swap to the big icon seamlessly:
-    // 1. set the real champion-icon src (already in cache)
+    // 1. przygotuj ikonę championa w tle, ZANIM cokolwiek schowamy — ikona jest
+    //    już wczytana z preloadu wcześniej, więc to praktycznie natychmiastowe
     const icon = document.getElementById('champion-icon');
-    icon.style.display = 'none'; // keep hidden until loaded
     icon.src = getIconUrl(final.name);
+    await new Promise(res => {
+        if (icon.complete && icon.naturalWidth) res();
+        else { icon.onload = res; icon.onerror = res; }
+    });
 
-    // 2. hide slot wrapper, show name
+    // 2. dopiero teraz — mając w pełni gotową ikonę — chowamy szybę i pokazujemy
+    //    ikonę + nazwę w tym samym momencie, bez przerwy między nimi
     wrapper.style.display = 'none';
+    icon.style.display = 'block';
     champName.style.display = 'block';
     champName.textContent = final.name;
-
-    // 3. show icon once loaded (instant from cache)
-    await new Promise(res => {
-        if (icon.complete && icon.naturalWidth) { icon.style.display = 'block'; res(); }
-        else { icon.onload = () => { icon.style.display = 'block'; res(); }; icon.onerror = res; }
-    });
 }
 
 // ══════════════════════════════════════════════
