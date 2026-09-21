@@ -294,15 +294,6 @@
         }
 
         /* slot machine */
-        .champ-name.loading {
-            animation: loadingPulse 1s ease-in-out infinite;
-            font-size: 1.1em !important;
-            letter-spacing: 3px !important;
-        }
-        @keyframes loadingPulse {
-            0%,100% { opacity: 0.4; }
-            50% { opacity: 1; }
-        }
         .slot-wrapper {
             overflow: hidden;
             height: 80px;
@@ -1425,6 +1416,10 @@ async function runSlotMachine(pool, final) {
     const reel = document.getElementById('slot-reel');
     const champName = document.getElementById('champ-name');
 
+    champName.style.display = 'none';
+    wrapper.style.display = 'flex';
+    reel.innerHTML = '';
+
     const names = pool.map(c => c.name);
     const spinCount = 18;
     const items = [];
@@ -1432,13 +1427,6 @@ async function runSlotMachine(pool, final) {
         items.push(names[Math.floor(Math.random() * names.length)]);
     }
     items.push(final.name);
-
-    // pokaż krótki loader zamiast pustej czarnej szyby, dopóki ikony się nie pobiorą
-    champName.style.display = 'block';
-    champName.classList.add('loading');
-    champName.textContent = 'LOSOWANIE…';
-    wrapper.style.display = 'none';
-    reel.innerHTML = '';
 
     // preload all icons so no blank frames mid-spin
     await Promise.all(items.map(name => new Promise(res => {
@@ -1463,11 +1451,6 @@ async function runSlotMachine(pool, final) {
         div.appendChild(img);
         reel.appendChild(div);
     });
-
-    // dopiero teraz — z gotową, wypełnioną szybą — pokazujemy slot machine
-    champName.classList.remove('loading');
-    champName.style.display = 'none';
-    wrapper.style.display = 'flex';
 
     const itemH = 80;
     // stop so the LAST item (final champion) is centred in the window –
@@ -1496,21 +1479,21 @@ async function runSlotMachine(pool, final) {
     });
 
     // slot is now showing the final champion – swap to the big icon seamlessly:
-    // 1. przygotuj ikonę championa w tle, ZANIM cokolwiek schowamy — ikona jest
-    //    już wczytana z preloadu wcześniej, więc to praktycznie natychmiastowe
+    // 1. set the real champion-icon src (already in cache)
     const icon = document.getElementById('champion-icon');
+    icon.style.display = 'none'; // keep hidden until loaded
     icon.src = getIconUrl(final.name);
-    await new Promise(res => {
-        if (icon.complete && icon.naturalWidth) res();
-        else { icon.onload = res; icon.onerror = res; }
-    });
 
-    // 2. dopiero teraz — mając w pełni gotową ikonę — chowamy szybę i pokazujemy
-    //    ikonę + nazwę w tym samym momencie, bez przerwy między nimi
+    // 2. hide slot wrapper, show name
     wrapper.style.display = 'none';
-    icon.style.display = 'block';
     champName.style.display = 'block';
     champName.textContent = final.name;
+
+    // 3. show icon once loaded (instant from cache)
+    await new Promise(res => {
+        if (icon.complete && icon.naturalWidth) { icon.style.display = 'block'; res(); }
+        else { icon.onload = () => { icon.style.display = 'block'; res(); }; icon.onerror = res; }
+    });
 }
 
 // ══════════════════════════════════════════════
