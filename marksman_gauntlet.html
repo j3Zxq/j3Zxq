@@ -1109,6 +1109,7 @@
             <div class="tooltip-row"><span>Przegrane</span><span id="tooltip-losses" style="color:var(--red)"></span></div>
             <div class="tooltip-row"><span>WR%</span><span id="tooltip-wr"></span></div>
             <div class="tooltip-row"><span>Życia</span><span id="tooltip-lives"></span></div>
+            <div class="tooltip-row"><span>MVP</span><span id="tooltip-mvps" style="color:var(--gold)"></span></div>
             <div class="tooltip-row"><span>Ranga</span><span id="tooltip-rank"></span></div>
             <div class="tooltip-rank-bar"><div class="tooltip-rank-fill" id="tooltip-rank-fill"></div></div>
         </div>
@@ -1712,7 +1713,7 @@ function renderTable() {
                     <div style="display:flex;align-items:center;gap:6px">
                         <span class="champ-rank-label" style="color:${champRank.color};border-color:${champRank.color}">${champRank.label}</span>
                     </div>
-                    ${nextRank ? `<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:${progressToNext}%;background:${champRank.color}"></div></div>` : ''}
+                    ${nextRank ? `<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:${progressToNext}%;background:${champRank.color}"></div></div><div style="font-size:0.68em;color:var(--rank-color);margin-top:2px">${effPts}/${nextRank.wins}</div>` : ''}
                     <div style="display:flex;gap:4px;margin-top:3px">
                         <button onclick="adjustRank('${c.name}', 1)" style="padding:0px 5px;font-size:0.7em;cursor:pointer;border:1px solid var(--blue);background:transparent;color:var(--blue);line-height:1.4" title="+1 punkt rangi (bez wpływu na W)">▲</button>
                         <button onclick="adjustRank('${c.name}', -1)" style="padding:0px 5px;font-size:0.7em;cursor:pointer;border:1px solid var(--muted);background:transparent;color:var(--muted);line-height:1.4" title="-1 punkt rangi">▼</button>
@@ -1835,7 +1836,10 @@ function showTooltip(name, event) {
         document.getElementById('tooltip-losses').textContent = c.losses;
         document.getElementById('tooltip-wr').textContent = wr;
         document.getElementById('tooltip-lives').textContent = '❤️'.repeat(Math.min(c.lives, 8)) + (c.lives > 8 ? ` +${c.lives-8}` : '');
-        document.getElementById('tooltip-rank').textContent = rank.label;
+        document.getElementById('tooltip-mvps').textContent = c.mvps ? `★ ${c.mvps}` : '—';
+        document.getElementById('tooltip-rank').textContent = nextRank
+            ? `${rank.label} (${effPts}/${nextRank.wins})`
+            : `${rank.label} (MAX)`;
         document.getElementById('tooltip-rank').style.color = rank.color;
         const fill = document.getElementById('tooltip-rank-fill');
         fill.style.width = pct + '%';
