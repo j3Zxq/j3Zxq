@@ -1387,7 +1387,7 @@ async function drawChampion() {
     // show icon - glow uses rank color
     const data = championData[picked.name];
     const icon = document.getElementById('champion-icon');
-    const champRank = getChampRank(currentChampion.wins);
+    const champRank = getChampRank(effectiveRankPoints(currentChampion));
     const glow = champRank.color;
     document.documentElement.style.setProperty('--glow', glow);
     // icon.src already set by runSlotMachine (preloaded)
@@ -1689,10 +1689,11 @@ function renderTable() {
         ).join('');
 
         const archColor = archColors[d?.arch] || 'var(--gold)';
-        const champRank = getChampRank(c.wins);
-        const nextRank = rankList.find(r => r.wins > c.wins);
+        const effPts = effectiveRankPoints(c);
+        const champRank = getChampRank(effPts);
+        const nextRank = rankList.find(r => r.wins > effPts);
         const progressToNext = nextRank
-            ? ((c.wins - getChampRank(c.wins).wins) / (nextRank.wins - getChampRank(c.wins).wins) * 100).toFixed(0)
+            ? ((effPts - champRank.wins) / (nextRank.wins - champRank.wins) * 100).toFixed(0)
             : 100;
 
         tr.innerHTML = `
@@ -1708,8 +1709,14 @@ function renderTable() {
             </td>
             <td>
                 <div class="rank-cell">
-                    <span class="champ-rank-label" style="color:${champRank.color};border-color:${champRank.color}">${champRank.label}</span>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <span class="champ-rank-label" style="color:${champRank.color};border-color:${champRank.color}">${champRank.label}</span>
+                    </div>
                     ${nextRank ? `<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:${progressToNext}%;background:${champRank.color}"></div></div>` : ''}
+                    <div style="display:flex;gap:4px;margin-top:3px">
+                        <button onclick="adjustRank('${c.name}', 1)" style="padding:0px 5px;font-size:0.7em;cursor:pointer;border:1px solid var(--blue);background:transparent;color:var(--blue);line-height:1.4" title="+1 punkt rangi (bez wpływu na W)">▲</button>
+                        <button onclick="adjustRank('${c.name}', -1)" style="padding:0px 5px;font-size:0.7em;cursor:pointer;border:1px solid var(--muted);background:transparent;color:var(--muted);line-height:1.4" title="-1 punkt rangi">▼</button>
+                    </div>
                 </div>
             </td>
             <td>
@@ -1774,6 +1781,31 @@ function adjustLives(name, delta) {
     showToast(`${delta > 0 ? '❤️ +1' : '💀 -1'} życie: ${name} (${entry.lives})`);
 }
 
+// punkty rangi — ręczna korekta rangi, NIE liczy się do wygranych/statystyk
+function effectiveRankPoints(c) {
+    return c.wins + (c.rankBonus || 0);
+}
+function adjustRank(name, delta) {
+    const entry = state.find(c => c.name === name);
+    if (!entry) return;
+    const oldRank = getChampRank(effectiveRankPoints(entry));
+    const current = entry.rankBonus || 0;
+    // efektywne punkty (wins + bonus) nie mogą spaść poniżej 0
+    entry.rankBonus = Math.max(-entry.wins, current + delta);
+    const newRank = getChampRank(effectiveRankPoints(entry));
+    saveState();
+    renderAll();
+    if (delta > 0 && newRank.label !== oldRank.label) {
+        entry.lives++;
+        saveState();
+        renderAll();
+        playSound('rankup');
+        showToast(`🏆 ${entry.name} awansował na ${newRank.label}! +1 życie ❤️`);
+    } else {
+        showToast(`${delta > 0 ? '🔼' : '🔽'} punkty rangi: ${name} (${entry.rankBonus >= 0 ? '+' : ''}${entry.rankBonus})`);
+    }
+}
+
 // ══════════════════════════════════════════════
 // TOOLTIP
 // ══════════════════════════════════════════════
@@ -1786,12 +1818,13 @@ function showTooltip(name, event) {
         const c = state.find(s => s.name === name);
         if (!c) return;
         const d = championData[name];
-        const rank = getChampRank(c.wins);
-        const nextRank = rankList.find(r => r.wins > c.wins);
+        const effPts = effectiveRankPoints(c);
+        const rank = getChampRank(effPts);
+        const nextRank = rankList.find(r => r.wins > effPts);
         const games = c.wins + c.losses;
         const wr = games > 0 ? (c.wins / games * 100).toFixed(1) + '%' : '—';
         const pct = nextRank
-            ? ((c.wins - rank.wins) / (nextRank.wins - rank.wins) * 100).toFixed(0)
+            ? ((effPts - rank.wins) / (nextRank.wins - rank.wins) * 100).toFixed(0)
             : 100;
 
         document.getElementById('tooltip-img').src = getIconUrl(name);
@@ -2054,7 +2087,7 @@ async function pickChampion(name) {
     document.getElementById('champ-name').style.color = '';
 
     // icon - glow uses rank color
-    const champRank = getChampRank(currentChampion.wins);
+    const champRank = getChampRank(effectiveRankPoints(currentChampion));
     const glow = champRank.color;
     document.documentElement.style.setProperty('--glow', glow);
     const icon = document.getElementById('champion-icon');
