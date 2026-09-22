@@ -1648,6 +1648,11 @@ function renderSidebar() {
     document.getElementById('history-list').innerHTML = histHTML || '<div style="opacity:0.4;font-size:0.8em">Brak historii</div>';
 }
 
+// bezpieczne osadzanie nazwy (z apostrofami typu Kai'Sa, Vel'Koz) w atrybucie onclick="..."
+function jsAttr(str) {
+    return JSON.stringify(str).replace(/"/g, '&quot;');
+}
+
 function renderTable() {
     let data = [...state];
 
@@ -1713,18 +1718,18 @@ function renderTable() {
                     <div style="display:flex;align-items:center;gap:6px">
                         <span class="champ-rank-label" style="color:${champRank.color};border-color:${champRank.color}">${champRank.label}</span>
                     </div>
-                    ${nextRank ? `<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:${progressToNext}%;background:${champRank.color}"></div></div><div style="font-size:0.68em;color:var(--rank-color);margin-top:2px">${effPts}/${nextRank.wins}</div>` : ''}
+                    ${nextRank ? `<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:${progressToNext}%;background:${champRank.color}"></div></div>` : ''}
                     <div style="display:flex;gap:4px;margin-top:3px">
-                        <button onclick="adjustRank('${c.name}', 1)" style="padding:0px 5px;font-size:0.7em;cursor:pointer;border:1px solid var(--blue);background:transparent;color:var(--blue);line-height:1.4" title="+1 punkt rangi (bez wpływu na W)">▲</button>
-                        <button onclick="adjustRank('${c.name}', -1)" style="padding:0px 5px;font-size:0.7em;cursor:pointer;border:1px solid var(--muted);background:transparent;color:var(--muted);line-height:1.4" title="-1 punkt rangi">▼</button>
+                        <button onclick="adjustRank(${jsAttr(c.name)}, 1)" style="padding:0px 5px;font-size:0.7em;cursor:pointer;border:1px solid var(--blue);background:transparent;color:var(--blue);line-height:1.4" title="+1 punkt rangi (bez wpływu na W)">▲</button>
+                        <button onclick="adjustRank(${jsAttr(c.name)}, -1)" style="padding:0px 5px;font-size:0.7em;cursor:pointer;border:1px solid var(--muted);background:transparent;color:var(--muted);line-height:1.4" title="-1 punkt rangi">▼</button>
                     </div>
                 </div>
             </td>
             <td>
                 <div style="display:flex;align-items:center;gap:6px">
                     <div class="lives-pips">${pipsHTML}</div>
-                    <button onclick="adjustLives('${c.name}', 1)" style="padding:1px 6px;font-size:0.75em;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);line-height:1.4" title="+1 życie">+</button>
-                    <button onclick="adjustLives('${c.name}', -1)" style="padding:1px 6px;font-size:0.75em;cursor:pointer;border:1px solid var(--red);background:transparent;color:var(--red);line-height:1.4" title="-1 życie">−</button>
+                    <button onclick="adjustLives(${jsAttr(c.name)}, 1)" style="padding:1px 6px;font-size:0.75em;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);line-height:1.4" title="+1 życie">+</button>
+                    <button onclick="adjustLives(${jsAttr(c.name)}, -1)" style="padding:1px 6px;font-size:0.75em;cursor:pointer;border:1px solid var(--red);background:transparent;color:var(--red);line-height:1.4" title="-1 życie">−</button>
                 </div>
             </td>
         `;
