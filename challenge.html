@@ -4,975 +4,562 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
 <style>body{visibility:hidden}</style>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marksman Gauntlet</title>
-<link rel="icon" type="image/png" sizes="32x32" href="botlane.png">
-<link rel="shortcut icon" type="image/png" href="botlane.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Challenge</title>
+<link rel="icon" type="image/png" sizes="32x32" href="lol.png">
+<link rel="shortcut icon" type="image/png" href="lol.png">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --gold: #b30000;
-            --gold-bright: #e8e8e8;
-            --gold-dim: rgba(179,0,0,0.3);
-            --blue: #60a5fa;
-            --green: #6ee7a0;
-            --red: #f07070;
-            --bg: #0a0a0a;
-            --bg2: #111111;
-            --surface: rgba(17,17,17,0.97);
-            --glow: var(--gold);
-            --rank-color: rgba(232,232,232,0.38);
-        }
+<style>
+:root {
+    --gold: #b30000;
+    --gold-bright: #e8e8e8;
+    --gold-dim: rgba(179,0,0,0.3);
+    --blue: #60a5fa;
+    --green: #6ee7a0;
+    --red: #f07070;
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --muted: rgba(232,232,232,0.38);
+    --glow: var(--gold);
+}
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            background: var(--bg);
-            color: var(--gold-bright);
-            min-height: 100vh;
-            overflow-x: hidden;
-            transition: background 1.2s ease;
-            -webkit-text-size-adjust: 100%;
-            -webkit-tap-highlight-color: transparent;
-        }
+body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg);
+    color: var(--gold-bright);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
 
-        /* ── CANVAS ── */
-        #bg-canvas {
-            position: fixed; inset: 0;
-            pointer-events: none; z-index: 0;
-        }
+/* ── CANVAS ── */
+#bg-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
 
-        /* ── LAYOUT ── */
-        .layout {
-            display: grid;
-            grid-template-columns: 240px 1fr;
-            grid-template-rows: auto 1fr;
-            gap: 0;
-            min-height: 100vh;
-            position: relative; z-index: 1;
-        }
+/* ── LAYOUT ── */
+.layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    min-height: 100vh;
+    position: relative; z-index: 1;
+}
 
-        /* ── SIDEBAR ── */
-        .sidebar {
-            grid-row: 1 / 3;
-            padding: 20px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            background: rgba(4,10,20,0.96);
-            border-right: 1px solid var(--gold-dim);
-            overflow-y: auto;
-            scrollbar-width: none;
-        }
+/* ── SIDEBAR ── */
+.sidebar {
+    grid-row: 1 / 3;
+    padding: 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: rgba(10,10,10,0.96);
+    border-right: 1px solid var(--gold-dim);
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+.side-box {
+    border: 1px solid var(--gold-dim);
+    padding: 14px;
+    background: rgba(0,0,0,0.4);
+    transition: border-color 0.4s;
+}
+.side-box:hover { border-color: var(--gold); }
+.side-box h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65em;
+    letter-spacing: 3px;
+    color: var(--gold);
+    border-bottom: 1px solid var(--gold-dim);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+.stat-row {
+    display: flex; justify-content: space-between;
+    font-size: 0.82em; padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.stat-val { color: var(--gold); font-weight: 700; }
 
-        .side-box {
-            border: 1px solid var(--gold-dim);
-            padding: 14px;
-            background: rgba(0,0,0,0.4);
-            transition: border-color 0.4s;
-        }
-        .side-box:hover { border-color: var(--gold); }
+.bar-row { margin-bottom: 10px; }
+.bar-label {
+    display: flex; justify-content: space-between; gap: 8px;
+    font-size: 0.72em; margin-bottom: 3px; opacity: 0.85;
+}
+.bar-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 2px; background: var(--gold); transition: width 0.6s cubic-bezier(.4,0,.2,1); }
 
-        .side-box h3 {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.65em;
-            letter-spacing: 3px;
-            color: var(--gold);
-            border-bottom: 1px solid var(--gold-dim);
-            padding-bottom: 8px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
+/* streak */
+.streak-display { text-align: center; padding: 8px 0; }
+.streak-num { font-family: 'Orbitron', monospace; font-size: 2.2em; font-weight: 900; line-height: 1; }
+.streak-label { font-size: 0.72em; letter-spacing: 2px; opacity: 0.7; }
+.streak-w { color: var(--green); }
+.streak-l { color: var(--red); }
 
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.82em;
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-        .stat-val { color: var(--gold); font-weight: 700; }
+/* history */
+.history-list { display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; scrollbar-width: none; }
+.hist-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 6px;
+    font-size: 0.78em; padding: 4px 6px;
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid transparent;
+}
+.hist-item.w { border-color: var(--green); }
+.hist-item.l { border-color: var(--red); }
+.hist-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-lane { font-size: 0.8em; letter-spacing: 1px; opacity: 0.9; }
+.hist-date { opacity: 0.45; font-size: 0.85em; white-space: nowrap; }
 
-        .bar-row { margin-bottom: 10px; }
-        .bar-label {
-            display: flex; justify-content: space-between;
-            font-size: 0.72em; margin-bottom: 3px; opacity: 0.8;
-        }
-        .bar-track {
-            height: 5px; background: rgba(255,255,255,0.08);
-            border-radius: 2px; overflow: hidden;
-        }
-        .bar-fill {
-            height: 100%; border-radius: 2px;
-            background: var(--gold);
-            transition: width 0.6s cubic-bezier(.4,0,.2,1);
-        }
+/* top3 */
+.top3-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.82em;
+}
+.top3-medal { font-size: 1.1em; width: 20px; text-align: center; }
+.top3-wr { margin-left: auto; color: var(--gold); font-weight: 700; }
 
-        .region-row {
-            display: flex; justify-content: space-between;
-            font-size: 0.78em; padding: 3px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-        .region-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            display: inline-block; margin-right: 6px;
-        }
+/* ── MAIN ── */
+.main { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
 
-        /* streak */
-        .streak-display {
-            text-align: center;
-            padding: 8px 0;
-        }
-        .streak-num {
-            font-family: 'Orbitron', monospace;
-            font-size: 2.2em;
-            font-weight: 900;
-            line-height: 1;
-        }
-        .streak-label { font-size: 0.72em; letter-spacing: 2px; opacity: 0.7; }
-        .streak-w { color: var(--green); }
-        .streak-l { color: var(--red); }
+/* ── NAV ── */
+.nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 56px;
+    background: rgba(10,10,10,0.96);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: sticky; top: 0; z-index: 200;
+    backdrop-filter: blur(10px);
+}
+.nav::after { content:''; position:absolute; bottom:-1px; left:24px; right:24px; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:0.5; pointer-events:none; }
+.nav-brand {
+    font-family: 'Orbitron', monospace;
+    font-size: 1em; font-weight: 700; letter-spacing: 3px;
+    color: var(--gold-bright); text-decoration: none;
+    display: flex; align-items: center; gap: 10px;
+    text-shadow: 0 0 16px rgba(180,0,0,0.35);
+}
+.nav-logo { width:22px; height:22px; min-width:22px; object-fit:contain; filter:drop-shadow(0 0 8px rgba(180,0,0,0.5)); display:block; }
+.nav-brand span { color: var(--muted); font-family: 'Rajdhani', sans-serif; font-size: 0.75em; letter-spacing: 2px; }
+.nav-actions { display: flex; align-items: center; gap: 8px; }
+.btn {
+    padding: 6px 14px; background: transparent;
+    border: 1px solid rgba(255,255,255,0.12); color: var(--muted);
+    font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 0.82em;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+    clip-path: polygon(6% 0%,100% 0%,94% 100%,0% 100%);
+}
+.btn:hover { color: var(--gold-bright); border-color: rgba(255,255,255,0.28); }
 
-        /* history */
-        .history-list {
-            display: flex; flex-direction: column; gap: 4px;
-            max-height: 200px; overflow-y: auto; scrollbar-width: none;
-        }
-        .hist-item {
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.78em; padding: 4px 6px;
-            background: rgba(255,255,255,0.03);
-            border-left: 3px solid transparent;
-        }
-        .hist-item.w { border-color: var(--green); }
-        .hist-item.l { border-color: var(--red); }
-        .hist-date { opacity: 0.45; font-size: 0.85em; }
+/* header */
+.header { text-align: center; padding-bottom: 16px; border-bottom: 1px solid var(--gold-dim); }
+.header h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: 2.2em; letter-spacing: 10px;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(179,0,0,0.4);
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.header-icon { width: 1em; height: 1em; object-fit: contain; filter: drop-shadow(0 0 12px rgba(179,0,0,0.5)); }
+.header .subtitle { font-size: 0.8em; letter-spacing: 4px; opacity: 0.5; margin-top: 4px; }
+.url-badge {
+    font-size: 0.7em; letter-spacing: 1px; opacity: 0.45; padding: 3px 8px;
+    border: 1px solid rgba(255,255,255,0.1); display: inline-block; margin-top: 4px;
+}
 
-        /* top3 */
-        .top3-item {
-            display: flex; align-items: center; gap: 8px;
-            padding: 5px 4px;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            font-size: 0.82em;
-        }
-        .top3-medal { font-size: 1.1em; width: 20px; text-align: center; }
-        .top3-wr { margin-left: auto; color: var(--gold); font-weight: 700; }
+/* result area */
+.result-area {
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--gold-dim);
+    padding: 30px 20px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 340px;
+    position: relative; overflow: hidden;
+    transition: border-color 0.5s;
+}
+.result-area::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(179,0,0,0.06), transparent 70%);
+    pointer-events: none;
+}
+#champion-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; }
+#champion-icon {
+    width: 140px; height: 140px;
+    border: 3px solid var(--glow);
+    border-radius: 4px;
+    display: none;
+    margin-bottom: 14px;
+    background: #1a1a1a;
+    box-shadow: 0 0 30px var(--glow);
+    animation: iconPulse 2.5s ease-in-out infinite;
+}
+@keyframes iconPulse {
+    0%,100% { box-shadow: 0 0 20px var(--glow); }
+    50% { box-shadow: 0 0 50px var(--glow), 0 0 80px rgba(179,0,0,0.2); }
+}
+.champ-caption { font-size: 0.72em; letter-spacing: 3px; color: var(--muted); margin-bottom: 6px; min-height: 1.2em; text-transform: uppercase; }
+.champ-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 2.6em; font-weight: 900; letter-spacing: 6px;
+    color: var(--gold-bright);
+    text-shadow: 0 0 20px rgba(179,0,0,0.5);
+    transition: color 0.3s;
+    text-align: center; width: 100%;
+    word-break: break-word;
+}
 
-        /* ── MAIN ── */
-        .main {
-            padding: 24px 28px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+/* lane chips */
+.lane-chips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+.lane-chip {
+    --lane-color: var(--gold);
+    --lane-bg: rgba(179,0,0,0.15);
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 18px;
+    font-family: 'Orbitron', monospace; font-size: 0.72em; letter-spacing: 3px;
+    color: var(--lane-color);
+    border: 1px solid var(--lane-color);
+    background: transparent;
+    opacity: 0.5; cursor: pointer; transition: all 0.2s;
+    text-transform: uppercase;
+}
+.lane-chip:hover { opacity: 0.85; }
+.lane-chip.active { opacity: 1; background: var(--lane-bg); box-shadow: 0 0 14px var(--lane-bg); }
+.lane-chip.single { cursor: default; opacity: 1; }
+.lane-chip-rec { font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 1px; font-size: 1.1em; color: var(--gold-bright); opacity: 0.85; }
+.lane-hint { font-size: 0.65em; letter-spacing: 2px; color: var(--muted); margin-top: 6px; text-transform: uppercase; }
 
-        /* ── NAV ── */
-        .nav{
-          display:flex;align-items:center;justify-content:space-between;
-          padding:0 24px;height:56px;
-          background:rgba(10,10,10,0.96);
-          border-bottom:1px solid rgba(255,255,255,0.06);
-          position:sticky;top:0;z-index:200;
-          backdrop-filter:blur(10px);
-        }
-        .nav::after{content:'';position:absolute;bottom:-1px;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.5;pointer-events:none;}
-        .nav-brand{
-          font-family:'Orbitron',monospace;
-          font-size:1em;font-weight:700;letter-spacing:3px;
-          color:var(--gold-bright);
-          text-decoration:none;
-          display:flex;align-items:center;gap:10px;
-          text-shadow:0 0 16px rgba(180,0,0,0.35);
-        }
-        .nav-logo{width:22px;height:22px;min-width:22px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(180,0,0,0.5));display:block;}
-        .nav-brand span{
-          color:var(--rank-color);
-          font-family:'Rajdhani',sans-serif;
-          font-size:0.75em;letter-spacing:2px;
-        }
-        .nav-actions{display:flex;align-items:center;gap:8px;}
-        .btn{
-          padding:6px 14px;background:transparent;
-          border:1px solid rgba(255,255,255,0.12);color:var(--rank-color);
-          font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82em;
-          letter-spacing:1.5px;text-transform:uppercase;
-          cursor:pointer;transition:all 0.2s;
-          clip-path:polygon(6% 0%,100% 0%,94% 100%,0% 100%);
-        }
-        .btn:hover{color:var(--gold-bright);border-color:rgba(255,255,255,0.28);}
+/* drawn champ stats */
+.drawn-stats { display: none; gap: 14px; margin-top: 16px; width: 100%; justify-content: center; flex-wrap: wrap; }
+.drawn-stat {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.3);
+    min-width: 70px;
+}
+.drawn-stat-val { font-family: 'Orbitron', monospace; font-size: 1.1em; font-weight: 700; }
+.drawn-stat-label { font-size: 0.6em; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
 
-        /* header */
-        .header {
-            text-align: center;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--gold-dim);
-        }
-        .header h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 2.2em;
-            letter-spacing: 10px;
-            color: var(--gold);
-            text-shadow: 0 0 30px rgba(179,0,0,0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-        .header-icon {
-            width: 1em;
-            height: 1em;
-            object-fit: contain;
-            filter: drop-shadow(0 0 12px rgba(179,0,0,0.5));
-        }
-        .header .subtitle {
-            font-size: 0.8em;
-            letter-spacing: 4px;
-            opacity: 0.5;
-            margin-top: 4px;
-        }
+/* action buttons */
+.action-btns { display: none; gap: 16px; width: 100%; margin-top: 22px; }
+.btn-result {
+    flex: 1; padding: 14px;
+    font-family: 'Orbitron', monospace; font-size: 1em; font-weight: 700; letter-spacing: 4px;
+    cursor: pointer; border: 1px solid; background: transparent; transition: all 0.2s;
+}
+.btn-win { color: var(--green); border-color: var(--green); }
+.btn-win:hover { background: rgba(110,231,160,0.12); }
+.btn-lose { color: var(--red); border-color: var(--red); }
+.btn-lose:hover { background: rgba(240,112,112,0.12); }
+.btn-mvp { flex: 0 0 auto; padding: 14px 16px; font-size: 0.85em; color: var(--gold); border-color: var(--gold); }
+.btn-mvp:hover { background: rgba(179,0,0,0.15); }
+.mvp-star { display: inline-flex; align-items: center; gap: 3px; font-size: 0.62em; color: var(--gold); margin-left: 6px; }
 
-        /* rank badge */
-        .rank-badge {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 4px 14px;
-            border: 1px solid var(--rank-color);
-            background: rgba(0,0,0,0.4);
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85em;
-            letter-spacing: 3px;
-            color: var(--rank-color);
-            margin-top: 8px;
-            transition: all 0.5s;
-        }
+/* skip / pick buttons */
+.draw-row { display: flex; gap: 12px; }
+.btn-draw {
+    width: 100%; padding: 16px;
+    font-family: 'Orbitron', monospace; font-size: 1.1em; font-weight: 700; letter-spacing: 5px;
+    cursor: pointer;
+    border: 1px solid var(--blue);
+    background: rgba(96,165,250,0.08);
+    color: var(--blue);
+    transition: all 0.25s;
+}
+.btn-draw:hover { background: rgba(96,165,250,0.18); box-shadow: 0 0 20px rgba(96,165,250,0.3); }
+.btn-draw.btn-pick { border-color: var(--gold); color: var(--gold); background: rgba(179,0,0,0.06); font-size: 1em; letter-spacing: 3px; }
+.btn-draw.btn-pick:hover { background: rgba(179,0,0,0.16); box-shadow: 0 0 20px rgba(179,0,0,0.3); }
 
-        /* result area */
-        .result-area {
-            background: rgba(0,0,0,0.7);
-            border: 1px solid var(--gold-dim);
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 340px;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            transition: border-color 0.5s;
-        }
-        .result-area::before {
-            content: '';
-            position: absolute; inset: 0;
-            background: radial-gradient(ellipse at 50% 0%, rgba(179,0,0,0.06), transparent 70%);
-            pointer-events: none;
-        }
+/* table */
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+thead th {
+    font-family: 'Orbitron', monospace; font-size: 0.72em; letter-spacing: 2px;
+    color: var(--gold); padding: 10px 8px;
+    border-bottom: 1px solid var(--gold-dim);
+    cursor: pointer; user-select: none; white-space: nowrap; text-align: left;
+}
+thead th:hover { color: var(--gold-bright); }
+thead th .sort-arrow { margin-left: 4px; opacity: 0.4; }
+thead th.sorted .sort-arrow { opacity: 1; color: var(--blue); }
+tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+tbody tr:hover { background: rgba(179,0,0,0.06); }
+tbody tr.eliminated td:not(:last-child) { opacity: 0.3; }
+tbody td { padding: 8px; }
+.empty-row { text-align: center; opacity: 0.4; padding: 24px !important; }
 
-        #champion-icon {
-            width: 140px; height: 140px;
-            border: 3px solid var(--glow);
-            border-radius: 4px;
-            display: none;
-            margin-bottom: 14px;
-            box-shadow: 0 0 30px var(--glow);
-            transition: box-shadow 0.3s;
-            animation: iconPulse 2.5s ease-in-out infinite;
-        }
-        @keyframes iconPulse {
-            0%,100% { box-shadow: 0 0 20px var(--glow); }
-            50% { box-shadow: 0 0 50px var(--glow), 0 0 80px rgba(179,0,0,0.2); }
-        }
+.wr-bar-cell { display: flex; align-items: center; gap: 8px; }
+.wr-mini { width: 60px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+.wr-mini-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.5s; }
 
-        .champ-name {
-            font-family: 'Orbitron', monospace;
-            font-size: 2.6em;
-            font-weight: 900;
-            letter-spacing: 6px;
-            color: var(--gold-bright);
-            text-shadow: 0 0 20px rgba(179,0,0,0.5);
-            transition: all 0.3s;
-        }
+.lane-tag {
+    display: inline-block;
+    font-size: 0.7em; padding: 2px 6px; margin-right: 4px;
+    border: 1px solid currentColor; border-radius: 2px;
+    white-space: nowrap; letter-spacing: 1px;
+}
+.lane-tag small { opacity: 0.75; margin-left: 5px; font-size: 0.95em; color: var(--gold-bright); }
+.lane-tag.dim { opacity: 0.3; }
 
-        /* slot machine */
-        .slot-wrapper {
-            overflow: hidden;
-            height: 80px;
-            width: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 3px solid var(--glow);
-            box-shadow: 0 0 30px var(--glow);
-            border-radius: 4px;
-            margin-bottom: 14px;
-        }
-        .slot-reel {
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.05s linear;
-            width: 80px;
-        }
-        .slot-item {
-            width: 80px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .slot-item img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            display: block;
-        }
+.life-btn {
+    padding: 2px 10px; cursor: pointer;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.9em; letter-spacing: 1px;
+    background: transparent; color: var(--gold-bright);
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: all 0.2s; white-space: nowrap;
+}
+.life-btn:hover { border-color: var(--gold-bright); }
+.life-btn.dead { color: var(--red); border-color: rgba(240,112,112,0.35); }
 
-        /* champ name centered */
-        .champ-name {
-            font-family: 'Orbitron', monospace;
-            font-size: 2.6em;
-            font-weight: 900;
-            letter-spacing: 6px;
-            color: var(--gold-bright);
-            text-shadow: 0 0 20px rgba(179,0,0,0.5);
-            transition: all 0.3s;
-            text-align: center;
-            width: 100%;
-        }
+.filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.filter-btn {
+    padding: 5px 14px;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.78em; letter-spacing: 2px;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+    background: transparent; color: rgba(255,255,255,0.6);
+    transition: all 0.2s; text-transform: uppercase;
+}
+.filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(179,0,0,0.1); }
 
-        /* drawn champ stats */
-        .drawn-stats {
-            display: none;
-            gap: 14px;
-            margin-top: 12px;
-            width: 100%;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .drawn-stat {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            padding: 6px 14px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.3);
-            min-width: 70px;
-        }
-        .drawn-stat-val {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.1em;
-            font-weight: 700;
-        }
-        .drawn-stat-label {
-            font-size: 0.6em;
-            letter-spacing: 2px;
-            color: var(--muted);
-            text-transform: uppercase;
-        }
-            font-size: 0.72em;
-            letter-spacing: 3px;
-            padding: 3px 12px;
-            border: 1px solid currentColor;
-            text-transform: uppercase;
-            margin-top: 6px;
-        }
-        /* arch badge */
-        .arch-badge {
-            font-size: 0.72em;
-            letter-spacing: 3px;
-            padding: 3px 12px;
-            border: 1px solid currentColor;
-            text-transform: uppercase;
-            margin-top: 6px;
-        }
+/* champ cell */
+.champ-cell { display: flex; align-items: center; gap: 8px; }
+.champ-thumb { width: 30px; height: 30px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.15); object-fit: cover; flex-shrink: 0; background: #1a1a1a; }
 
-        /* synergy */
-        .synergy-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            margin-top: 20px;
-            width: 100%;
-        }
-        .syn-card {
-            padding: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.3);
-            text-align: center;
-        }
-        .syn-card .syn-label {
-            font-size: 0.65em;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            opacity: 0.7;
-            margin-bottom: 6px;
-            display: block;
-        }
-        .syn-card .syn-type { font-weight: 700; font-size: 0.95em; }
-        .syn-card .syn-ex { font-size: 0.75em; opacity: 0.7; margin-top: 4px; font-style: italic; }
-        .syn-perfect { border-color: var(--gold) !important; }
-        .syn-perfect .syn-type { color: var(--gold); }
-        .syn-good { border-color: var(--green) !important; }
-        .syn-good .syn-type { color: var(--green); }
-        .syn-bad { border-color: var(--red) !important; }
-        .syn-bad .syn-type { color: var(--red); }
+/* admin */
+.admin-row {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);
+    opacity: 0.45; transition: opacity 0.2s;
+}
+.admin-row:hover { opacity: 0.85; }
+.btn-admin {
+    padding: 6px 14px; font-size: 0.75em; letter-spacing: 2px;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+    background: transparent; color: rgba(255,255,255,0.7);
+    font-family: 'Rajdhani', sans-serif; transition: all 0.2s; text-transform: uppercase;
+}
+.btn-admin:hover { border-color: var(--gold); color: var(--gold); }
+.btn-admin.danger { color: var(--red); border-color: rgba(240,112,112,0.3); }
+.btn-admin.danger:hover { border-color: var(--red); background: rgba(240,112,112,0.08); }
 
-        /* action buttons */
-        .action-btns {
-            display: none;
-            gap: 16px;
-            width: 100%;
-            margin-top: 22px;
-        }
-        .btn-result {
-            flex: 1; padding: 14px;
-            font-family: 'Orbitron', monospace;
-            font-size: 1em; font-weight: 700;
-            letter-spacing: 4px;
-            cursor: pointer;
-            border: 1px solid;
-            background: transparent;
-            transition: all 0.2s;
-        }
-        .btn-win { color: var(--green); border-color: var(--green); }
-        .btn-win:hover { background: rgba(0,255,204,0.12); }
-        .btn-lose { color: var(--red); border-color: var(--red); }
-        .btn-lose:hover { background: rgba(255,78,78,0.12); }
-        .btn-mvp {
-            flex: 0 0 auto;
-            padding: 14px 16px;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85em;
-            color: var(--gold);
-            border-color: var(--gold);
-        }
-        .btn-mvp:hover { background: rgba(244,197,80,0.12); }
-        .mvp-star {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            font-size: 0.62em;
-            color: var(--gold);
-            margin-left: 6px;
-        }
+/* champion tooltip */
+.champ-tooltip {
+    position: fixed; z-index: 9999; pointer-events: none;
+    opacity: 0; transform: translateY(6px) scale(0.97);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    width: 210px;
+}
+.champ-tooltip.visible { opacity: 1; transform: translateY(0) scale(1); }
+.tooltip-inner { background: rgba(10,10,10,0.97); border: 1px solid var(--gold-dim); overflow: hidden; }
+.tooltip-img { width: 100%; height: 110px; object-fit: cover; object-position: top; display: block; background: #1a1a1a; }
+.tooltip-body { padding: 10px 12px; }
+.tooltip-name { font-family: 'Orbitron', monospace; font-size: 0.85em; letter-spacing: 2px; color: var(--gold); margin-bottom: 6px; word-break: break-word; }
+.tooltip-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.75em; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.tooltip-row:last-child { border-bottom: none; }
+.tooltip-row span:last-child { font-weight: 700; text-align: right; }
 
-        /* draw button */
-        .btn-draw {
-            width: 100%; padding: 16px;
-            font-family: 'Orbitron', monospace;
-            font-size: 1.3em; font-weight: 700;
-            letter-spacing: 6px;
-            cursor: pointer;
-            border: 1px solid var(--blue);
-            background: rgba(10,200,185,0.08);
-            color: var(--blue);
-            transition: all 0.25s;
-        }
-        .btn-draw:hover {
-            background: rgba(10,200,185,0.18);
-            box-shadow: 0 0 20px rgba(10,200,185,0.3);
-        }
-        .btn-draw:disabled { opacity: 0.4; cursor: not-allowed; }
+/* sound toggle */
+.sound-toggle {
+    position: fixed; bottom: 24px; left: 24px; z-index: 998;
+    background: rgba(10,10,10,0.9); border: 1px solid var(--gold-dim);
+    color: var(--gold-bright); padding: 8px 12px; font-size: 1.1em;
+    cursor: pointer; transition: all 0.2s; line-height: 1;
+}
+.sound-toggle:hover { border-color: var(--gold); }
+.sound-toggle.muted { opacity: 0.4; }
 
-        /* table */
-        .table-wrapper {
-            overflow-x: auto;
-        }
-        table {
-            width: 100%; border-collapse: collapse;
-            font-size: 0.85em;
-        }
-        thead th {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.72em;
-            letter-spacing: 2px;
-            color: var(--gold);
-            padding: 10px 8px;
-            border-bottom: 1px solid var(--gold-dim);
-            cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
-        }
-        thead th:hover { color: var(--gold-bright); }
-        thead th .sort-arrow { margin-left: 4px; opacity: 0.4; }
-        thead th.sorted .sort-arrow { opacity: 1; color: var(--blue); }
+/* toast */
+.toast {
+    position: fixed; bottom: 24px; right: 24px;
+    padding: 12px 20px; background: var(--bg2);
+    border: 1px solid var(--gold-dim);
+    font-size: 0.85em; letter-spacing: 1px; z-index: 999;
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s cubic-bezier(.4,0,.2,1);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
 
-        tbody tr {
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            transition: background 0.15s;
-        }
-        tbody tr:hover { background: rgba(179,0,0,0.06); }
-        tbody tr.eliminated { opacity: 0.28; }
-        tbody td { padding: 8px; }
+/* modal */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--bg2); border: 1px solid var(--gold-dim); padding: 30px 36px; max-width: 440px; width: 90%; text-align: center; }
+.modal h3 { font-family: 'Orbitron', monospace; color: var(--gold); letter-spacing: 3px; margin-bottom: 12px; }
+.modal p { opacity: 0.75; font-size: 0.9em; margin-bottom: 20px; }
+.modal-btns { display: flex; gap: 12px; justify-content: center; }
+.modal-btns button {
+    padding: 10px 24px; font-family: 'Orbitron', monospace; font-size: 0.85em; letter-spacing: 2px;
+    cursor: pointer; border: 1px solid; background: transparent; transition: all 0.2s;
+}
+.btn-confirm { color: var(--red); border-color: var(--red); }
+.btn-confirm:hover { background: rgba(240,112,112,0.12); }
+.btn-cancel { color: var(--gold-bright); border-color: rgba(255,255,255,0.2); }
+.btn-cancel:hover { border-color: var(--gold-bright); }
 
-        .wr-bar-cell { display: flex; align-items: center; gap: 8px; }
-        .wr-mini { width: 60px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
-        .wr-mini-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.5s; }
+/* pick modal */
+.pick-modal {
+    background: var(--bg2); border: 1px solid var(--gold-dim);
+    padding: 24px; width: 96%; max-width: 860px; max-height: 88vh;
+    display: flex; flex-direction: column; gap: 14px;
+}
+.pick-modal h3 { font-family: 'Orbitron', monospace; color: var(--gold); letter-spacing: 3px; font-size: 1em; text-align: center; }
+.pick-search {
+    width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--gold-dim);
+    color: var(--gold-bright); padding: 8px 14px;
+    font-family: 'Rajdhani', sans-serif; font-size: 1em; letter-spacing: 1px;
+    outline: none; transition: border-color 0.2s;
+}
+.pick-search:focus { border-color: var(--gold); }
+.pick-search::placeholder { opacity: 0.4; }
+.pick-filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.pick-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px;
+    overflow-y: auto; padding-right: 4px; flex: 1;
+}
+.pick-grid::-webkit-scrollbar { width: 4px; }
+.pick-grid::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+.pick-card {
+    display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 4px;
+    border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3);
+    cursor: pointer; transition: all 0.18s; text-align: center;
+}
+.pick-card:hover { border-color: var(--gold); background: rgba(179,0,0,0.1); transform: translateY(-2px); }
+.pick-card.dead-card { opacity: 0.3; pointer-events: none; }
+.pick-card img { width: 64px; height: 64px; border-radius: 3px; border: 2px solid transparent; background: #1a1a1a; transition: border-color 0.18s; }
+.pick-card:hover img { border-color: var(--gold); }
+.pick-card .pick-name { font-size: 0.7em; letter-spacing: 0.5px; line-height: 1.2; color: var(--gold-bright); width: 100%; word-break: break-word; }
+.pick-card .pick-lanes { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+.pick-card .pick-lane { font-size: 0.58em; letter-spacing: 1px; padding: 1px 4px; border: 1px solid currentColor; }
+.pick-card .pick-rec { font-size: 0.68em; letter-spacing: 1px; opacity: 0.7; }
 
-        .lives-pips { display: flex; gap: 3px; }
-        .pip { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
-        .pip.dead { background: rgba(255,255,255,0.1); }
+/* ══════════ RESPONSIVE — TABLETS / SMALL LAPTOPS ══════════ */
+@media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar {
+        grid-row: auto; flex-direction: row; overflow-x: auto; overflow-y: visible;
+        border-right: none; border-bottom: 1px solid var(--gold-dim);
+        padding: 12px; gap: 10px; -webkit-overflow-scrolling: touch;
+    }
+    .sidebar .side-box { min-width: 190px; flex-shrink: 0; }
+    .main { padding: 16px; gap: 16px; }
 
-        .arch-tag {
-            font-size: 0.7em; padding: 2px 6px;
-            border: 1px solid currentColor;
-            border-radius: 2px;
-        }
+    .nav { padding: 0 14px; height: auto; min-height: 52px; flex-wrap: wrap; gap: 6px 10px; }
+    .nav-brand { font-size: 0.85em; letter-spacing: 2px; }
+    .nav-brand span { font-size: 0.7em; }
+    .nav-actions { gap: 6px; }
+    #user-email { display: none; }
 
-        .filter-row {
-            display: flex; gap: 10px; flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-        .filter-btn {
-            padding: 5px 14px;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 0.78em; letter-spacing: 2px;
-            cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
-            background: transparent; color: rgba(255,255,255,0.6);
-            transition: all 0.2s; text-transform: uppercase;
-        }
-        .filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(179,0,0,0.1); }
+    .header h1 { font-size: 1.5em; letter-spacing: 5px; }
+    .header .subtitle { font-size: 0.72em; letter-spacing: 2px; }
 
-        /* admin */
-        .admin-row {
-            display: flex; gap: 10px; justify-content: center;
-            flex-wrap: wrap; padding-top: 10px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-            opacity: 0.45;
-            transition: opacity 0.2s;
-        }
-        .admin-row:hover { opacity: 0.85; }
-        .btn-admin {
-            padding: 6px 14px; font-size: 0.75em; letter-spacing: 2px;
-            cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
-            background: transparent; color: rgba(255,255,255,0.7);
-            font-family: 'Rajdhani', sans-serif;
-            transition: all 0.2s; text-transform: uppercase;
-        }
-        .btn-admin:hover { border-color: var(--gold); color: var(--gold); }
-        .btn-admin.danger { color: var(--red); border-color: rgba(255,78,78,0.3); }
-        .btn-admin.danger:hover { border-color: var(--red); background: rgba(255,78,78,0.08); }
+    .result-area { padding: 20px 14px; min-height: 280px; }
+    #champion-icon { width: 108px; height: 108px; }
+    .champ-name { font-size: 1.8em; letter-spacing: 3px; }
+    .drawn-stats { gap: 8px; }
+    .drawn-stat { padding: 5px 10px; min-width: 60px; }
+    .drawn-stat-val { font-size: 1em; }
 
-        /* champion tooltip */
-        .champ-tooltip {
-            position: fixed;
-            z-index: 9999;
-            pointer-events: none;
-            opacity: 0;
-            transform: translateY(6px) scale(0.97);
-            transition: opacity 0.18s ease, transform 0.18s ease;
-            width: 200px;
-        }
-        .champ-tooltip.visible {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-        .tooltip-inner {
-            background: rgba(4, 10, 22, 0.97);
-            border: 1px solid var(--gold-dim);
-            overflow: hidden;
-        }
-        .tooltip-img {
-            width: 100%;
-            height: 110px;
-            object-fit: cover;
-            object-position: top;
-            display: block;
-        }
-        .tooltip-body {
-            padding: 10px 12px;
-        }
-        .tooltip-name {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85em;
-            letter-spacing: 2px;
-            color: var(--gold);
-            margin-bottom: 6px;
-        }
-        .tooltip-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75em;
-            padding: 2px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-        .tooltip-row:last-child { border-bottom: none; }
-        .tooltip-row span:last-child { font-weight: 700; }
-        .tooltip-rank-bar {
-            height: 3px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 2px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-        .tooltip-rank-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.4s ease;
-        }
+    .action-btns { gap: 8px; flex-wrap: wrap; }
+    .btn-result { padding: 12px; font-size: 0.85em; letter-spacing: 2px; flex: 1 1 calc(50% - 8px); }
+    .btn-mvp { flex: 1 1 100%; order: 3; }
+    .btn-draw { font-size: 0.95em; letter-spacing: 3px; padding: 13px; }
 
-        /* sound toggle */
-        .sound-toggle {
-            position: fixed;
-            bottom: 24px; left: 24px;
-            z-index: 998;
-            background: rgba(4,10,22,0.9);
-            border: 1px solid var(--gold-dim);
-            color: var(--gold-bright);
-            padding: 8px 12px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: all 0.2s;
-            line-height: 1;
-        }
-        .sound-toggle:hover { border-color: var(--gold); }
-        .sound-toggle.muted { opacity: 0.4; }
+    .filter-row { gap: 6px; }
+    .filter-btn { padding: 5px 10px; font-size: 0.72em; }
 
-        /* toast */
-        .toast {
-            position: fixed; bottom: 24px; right: 24px;
-            padding: 12px 20px;
-            background: var(--bg2);
-            border: 1px solid var(--gold-dim);
-            font-size: 0.85em; letter-spacing: 1px;
-            z-index: 999;
-            transform: translateY(80px); opacity: 0;
-            transition: all 0.3s cubic-bezier(.4,0,.2,1);
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
+    .table-wrapper { -webkit-overflow-scrolling: touch; }
+    table { font-size: 0.78em; }
+    thead th { padding: 8px 6px; font-size: 0.66em; }
+    tbody td { padding: 6px; }
+    .champ-thumb { width: 24px; height: 24px; }
+    .wr-mini { width: 44px; }
 
-        /* modal */
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 500;
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.3s;
-        }
-        .modal-overlay.open { opacity: 1; pointer-events: all; }
-        .modal {
-            background: var(--bg2);
-            border: 1px solid var(--gold-dim);
-            padding: 30px 36px;
-            max-width: 440px; width: 90%;
-            text-align: center;
-        }
-        .modal h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            letter-spacing: 3px;
-            margin-bottom: 12px;
-        }
-        .modal p { opacity: 0.75; font-size: 0.9em; margin-bottom: 20px; }
-        .modal-btns { display: flex; gap: 12px; justify-content: center; }
-        .modal-btns button {
-            padding: 10px 24px;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85em; letter-spacing: 2px;
-            cursor: pointer; border: 1px solid;
-            background: transparent;
-            transition: all 0.2s;
-        }
-        .btn-confirm { color: var(--red); border-color: var(--red); }
-        .btn-confirm:hover { background: rgba(255,78,78,0.12); }
-        .btn-cancel { color: var(--gold-bright); border-color: rgba(255,255,255,0.2); }
-        .btn-cancel:hover { border-color: var(--gold-bright); }
+    .admin-row { gap: 8px; }
+    .btn-admin { padding: 5px 10px; font-size: 0.7em; }
 
-        /* pick modal */
-        .pick-modal {
-            background: var(--bg2);
-            border: 1px solid var(--gold-dim);
-            padding: 24px;
-            width: 96%;
-            max-width: 820px;
-            max-height: 88vh;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-        .pick-modal h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            letter-spacing: 3px;
-            font-size: 1em;
-            text-align: center;
-        }
-        .pick-search {
-            width: 100%;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid var(--gold-dim);
-            color: var(--gold-bright);
-            padding: 8px 14px;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1em;
-            letter-spacing: 1px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .pick-search:focus { border-color: var(--gold); }
-        .pick-search::placeholder { opacity: 0.4; }
-        .pick-filter-row {
-            display: flex; gap: 8px; flex-wrap: wrap;
-        }
-        .pick-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            gap: 10px;
-            overflow-y: auto;
-            padding-right: 4px;
-            flex: 1;
-        }
-        .pick-grid::-webkit-scrollbar { width: 4px; }
-        .pick-grid::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
-        .pick-card {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 5px; padding: 8px 4px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: rgba(0,0,0,0.3);
-            cursor: pointer;
-            transition: all 0.18s;
-            position: relative;
-            text-align: center;
-        }
-        .pick-card:hover {
-            border-color: var(--gold);
-            background: rgba(179,0,0,0.1);
-            transform: translateY(-2px);
-        }
-        .pick-card.dead-card {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-        .pick-card img {
-            width: 64px; height: 64px;
-            border-radius: 3px;
-            border: 2px solid transparent;
-            transition: border-color 0.18s;
-        }
-        .pick-card:hover img { border-color: var(--gold); }
-        .pick-card .pick-name {
-            font-size: 0.68em;
-            letter-spacing: 0.5px;
-            text-align: center;
-            line-height: 1.2;
-            color: var(--gold-bright);
-            width: 100%;
-            display: block;
-            word-break: break-word;
-        }
-        .pick-card .pick-arch {
-            font-size: 0.6em; letter-spacing: 1px;
-            padding: 1px 5px;
-            border: 1px solid currentColor;
-        }
-        .pick-card .pick-lives {
-            display: flex; gap: 2px;
-        }
-        .pick-card .pip-sm {
-            width: 5px; height: 5px; border-radius: 50%;
-            background: var(--gold);
-        }
-        .pick-card .pip-sm.dead { background: rgba(255,255,255,0.1); }
+    .modal { padding: 22px 18px; width: 92%; }
+    .pick-modal { padding: 16px; width: 94%; max-height: 92vh; }
+    .pick-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+    .pick-card img { width: 52px; height: 52px; }
 
-        /* rank cell in table */
-        .rank-cell { display: flex; flex-direction: column; gap: 3px; min-width: 90px; }
-        .champ-rank-label {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.68em;
-            letter-spacing: 2px;
-            padding: 2px 6px;
-            border: 1px solid;
-            display: inline-block;
-            white-space: nowrap;
-        }
-        .rank-progress-bar {
-            height: 3px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 2px;
-            overflow: hidden;
-            width: 100%;
-        }
-        .rank-progress-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.5s ease;
-        }
+    .sound-toggle { bottom: 14px; left: 14px; padding: 7px 10px; font-size: 1em; }
+    .toast { bottom: 14px; right: 14px; left: 14px; font-size: 0.8em; padding: 10px 16px; text-align: center; }
+}
 
-        /* table icon */
-        .champ-cell { display: flex; align-items: center; gap: 8px; }
-        .champ-thumb {
-            width: 30px; height: 30px;
-            border-radius: 3px;
-            border: 1px solid rgba(255,255,255,0.15);
-            object-fit: cover;
-            flex-shrink: 0;
-        }
+/* ══════════ RESPONSIVE — PHONES ══════════ */
+@media (max-width: 480px) {
+    .main { padding: 12px; gap: 12px; }
+    .sidebar { padding: 10px; gap: 8px; }
+    .sidebar .side-box { min-width: 160px; padding: 10px; }
 
-        /* url save indicator */
-        .url-badge {
-            font-size: 0.7em; letter-spacing: 1px;
-            opacity: 0.45; padding: 3px 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-            display: inline-block; margin-top: 4px;
-        }
+    .nav { padding: 0 10px; }
+    .nav-brand { font-size: 0.75em; letter-spacing: 1px; gap: 6px; }
+    .nav-brand span { display: none; }
+    .nav-logo { width: 18px; height: 18px; min-width: 18px; }
+    .btn { padding: 5px 10px; font-size: 0.72em; }
 
-        /* ══════════════════════════════════════════════
-           RESPONSIVE — TABLETS / SMALL LAPTOPS
-        ══════════════════════════════════════════════ */
-        @media (max-width: 768px) {
-            .layout { grid-template-columns: 1fr; }
-            .sidebar {
-                grid-row: auto;
-                flex-direction: row;
-                overflow-x: auto;
-                overflow-y: visible;
-                border-right: none;
-                border-bottom: 1px solid var(--gold-dim);
-                padding: 12px;
-                gap: 10px;
-                -webkit-overflow-scrolling: touch;
-            }
-            .sidebar .side-box { min-width: 180px; flex-shrink: 0; }
-            .main { padding: 16px; gap: 16px; }
-            .synergy-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1.15em; letter-spacing: 3px; }
+    .header .subtitle { font-size: 0.62em; letter-spacing: 1.5px; }
+    .url-badge { font-size: 0.62em; padding: 2px 6px; }
 
-            /* nav */
-            .nav { padding: 0 14px; height: auto; min-height: 52px; flex-wrap: wrap; gap: 6px 10px; }
-            .nav-brand { font-size: 0.85em; letter-spacing: 2px; }
-            .nav-brand span { font-size: 0.7em; }
-            .nav-actions { gap: 6px; }
-            #user-email { display: none; }
+    .result-area { padding: 16px 10px; min-height: 250px; }
+    #champion-icon { width: 88px; height: 88px; }
+    .champ-name { font-size: 1.4em; letter-spacing: 2px; }
+    .lane-chip { padding: 6px 12px; letter-spacing: 2px; }
+    .drawn-stats { gap: 6px; }
+    .drawn-stat { padding: 4px 8px; min-width: 52px; }
+    .drawn-stat-val { font-size: 0.9em; }
+    .drawn-stat-label { font-size: 0.55em; }
 
-            /* header */
-            .header h1 { font-size: 1.5em; letter-spacing: 5px; }
-            .header .subtitle { font-size: 0.72em; letter-spacing: 2px; }
+    .draw-row { flex-direction: column; gap: 8px; }
+    .btn-draw { font-size: 0.9em; letter-spacing: 2px; padding: 12px; }
 
-            /* result area */
-            .result-area { padding: 20px 14px; min-height: 280px; }
-            #champion-icon { width: 108px; height: 108px; }
-            .champ-name { font-size: 1.8em; letter-spacing: 3px; }
-            .slot-wrapper, .slot-reel, .slot-item, .slot-item img { width: 64px; height: 64px; }
-            .drawn-stats { gap: 8px; }
-            .drawn-stat { padding: 5px 10px; min-width: 60px; }
-            .drawn-stat-val { font-size: 1em; }
+    .btn-result { padding: 11px; font-size: 0.78em; letter-spacing: 1px; }
+    .btn-mvp { padding: 11px; font-size: 0.75em; }
 
-            /* action buttons */
-            .action-btns { gap: 8px; flex-wrap: wrap; }
-            .btn-result { padding: 12px; font-size: 0.85em; letter-spacing: 2px; flex: 1 1 calc(50% - 8px); }
-            .btn-mvp { flex: 1 1 100%; order: 3; }
+    .filter-btn { padding: 4px 8px; font-size: 0.68em; }
 
-            /* draw row */
-            .btn-draw { font-size: 1em; letter-spacing: 3px; padding: 13px; }
+    table { font-size: 0.72em; }
+    thead th { padding: 7px 5px; font-size: 0.6em; }
+    tbody td { padding: 5px; }
+    .champ-cell { gap: 5px; }
+    .champ-thumb { width: 20px; height: 20px; }
+    .wr-mini { width: 34px; }
+    .lane-tag { font-size: 0.64em; padding: 1px 4px; }
+    .life-btn { padding: 1px 6px; font-size: 0.8em; }
 
-            /* filters */
-            .filter-row { gap: 6px; }
-            .filter-btn { padding: 5px 10px; font-size: 0.72em; }
+    .btn-admin { padding: 4px 8px; font-size: 0.65em; }
 
-            /* table */
-            .table-wrapper { -webkit-overflow-scrolling: touch; }
-            table { font-size: 0.78em; }
-            thead th { padding: 8px 6px; font-size: 0.66em; }
-            tbody td { padding: 6px; }
-            .champ-thumb { width: 24px; height: 24px; }
-            .wr-mini { width: 44px; }
-            .rank-cell { min-width: 74px; }
+    .modal { padding: 18px 14px; }
+    .modal h3 { font-size: 0.9em; }
+    .modal-btns button { padding: 8px 16px; font-size: 0.75em; }
+    .pick-modal h3 { font-size: 0.88em; }
+    .pick-search { padding: 7px 10px; font-size: 0.9em; }
+    .pick-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; }
+    .pick-card img { width: 44px; height: 44px; }
+    .pick-card .pick-name { font-size: 0.62em; }
 
-            /* admin row */
-            .admin-row { gap: 8px; }
-            .btn-admin { padding: 5px 10px; font-size: 0.7em; }
-
-            /* modals */
-            .modal { padding: 22px 18px; width: 92%; }
-            .pick-modal { padding: 16px; width: 94%; max-height: 92vh; }
-            .pick-grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
-            .pick-card img { width: 52px; height: 52px; }
-
-            /* floating elements */
-            .sound-toggle { bottom: 14px; left: 14px; padding: 7px 10px; font-size: 1em; }
-            .toast { bottom: 14px; right: 14px; left: 14px; font-size: 0.8em; padding: 10px 16px; text-align: center; }
-        }
-
-        /* ══════════════════════════════════════════════
-           RESPONSIVE — PHONES
-        ══════════════════════════════════════════════ */
-        @media (max-width: 480px) {
-            .main { padding: 12px; gap: 12px; }
-            .sidebar { padding: 10px; gap: 8px; }
-            .sidebar .side-box { min-width: 155px; padding: 10px; }
-
-            /* nav */
-            .nav { padding: 0 10px; }
-            .nav-brand { font-size: 0.75em; letter-spacing: 1px; gap: 6px; }
-            .nav-brand span { display: none; }
-            .nav-logo { width: 18px; height: 18px; min-width: 18px; }
-            .btn { padding: 5px 10px; font-size: 0.72em; }
-
-            /* header */
-            .header h1 { font-size: 1.15em; letter-spacing: 3px; }
-            .header .subtitle { font-size: 0.62em; letter-spacing: 1.5px; }
-            .url-badge { font-size: 0.62em; padding: 2px 6px; }
-
-            /* result area */
-            .result-area { padding: 16px 10px; min-height: 250px; }
-            #champion-icon { width: 88px; height: 88px; }
-            .champ-name { font-size: 1.4em; letter-spacing: 2px; }
-            .arch-badge { font-size: 0.65em; letter-spacing: 2px; }
-            .drawn-stats { gap: 6px; }
-            .drawn-stat { padding: 4px 8px; min-width: 52px; }
-            .drawn-stat-val { font-size: 0.9em; }
-            .drawn-stat-label { font-size: 0.55em; }
-
-            /* draw + pick row */
-            .draw-row { flex-direction: column; gap: 8px !important; }
-            .btn-draw { font-size: 0.9em; letter-spacing: 2px; padding: 12px; }
-
-            /* action buttons */
-            .btn-result { padding: 11px; font-size: 0.78em; letter-spacing: 1px; }
-            .btn-mvp { padding: 11px; font-size: 0.75em; }
-
-            /* filters */
-            .filter-btn { padding: 4px 8px; font-size: 0.68em; }
-
-            /* table */
-            table { font-size: 0.72em; }
-            thead th { padding: 7px 5px; font-size: 0.6em; }
-            tbody td { padding: 5px; }
-            .champ-cell { gap: 5px; }
-            .champ-thumb { width: 20px; height: 20px; }
-            .wr-mini { width: 34px; }
-            .rank-cell { min-width: 64px; }
-            .champ-rank-label { font-size: 0.6em; padding: 1px 4px; }
-            .lives-pips { gap: 2px; }
-
-            /* admin row */
-            .btn-admin { padding: 4px 8px; font-size: 0.65em; }
-
-            /* modals */
-            .modal { padding: 18px 14px; }
-            .modal h3 { font-size: 0.9em; }
-            .modal-btns button { padding: 8px 16px; font-size: 0.75em; }
-            .pick-modal h3 { font-size: 0.88em; }
-            .pick-search { padding: 7px 10px; font-size: 0.9em; }
-            .pick-grid { grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 6px; }
-            .pick-card img { width: 44px; height: 44px; }
-            .pick-card .pick-name { font-size: 0.62em; }
-
-            /* champ tooltip — narrower so it never overflows viewport */
-            .champ-tooltip { width: 168px; }
-        }
-    </style>
+    .champ-tooltip { width: 176px; }
+}
+</style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
 
 <nav class="nav">
-  <a class="nav-brand" href="index.html"><img class="nav-logo" src="akatsuki_logo.png" alt="Akatsuki Logo"> <span>NEXUS /</span> Marksman Gauntlet</a>
+  <a class="nav-brand" href="index.html"><img class="nav-logo" src="akatsuki_logo.png" alt="Akatsuki Logo"> <span>NEXUS /</span> Challenge</a>
   <div class="nav-actions">
-    <span id="user-email" style="align-self:center;font-size:0.75em;letter-spacing:1px;color:var(--rank-color);margin-left:6px;"></span>
+    <span id="user-email" style="align-self:center;font-size:0.75em;letter-spacing:1px;color:var(--muted);margin-left:6px;"></span>
     <button class="btn" id="logout-btn" onclick="logout()">Wyloguj</button>
   </div>
 </nav>
@@ -986,17 +573,17 @@
         </div>
         <div class="side-box">
             <h3>Streak</h3>
-            <div class="streak-display" id="streak-display">
+            <div class="streak-display">
                 <div class="streak-num" id="streak-num">—</div>
-                <div class="streak-label" id="streak-label">BRAK GIE</div>
+                <div class="streak-label" id="streak-label">BRAK GIER</div>
             </div>
         </div>
         <div class="side-box">
-            <h3>Klasa WR</h3>
-            <div id="arch-bars"></div>
+            <h3>Winrate per linia</h3>
+            <div id="lane-bars"></div>
         </div>
         <div class="side-box">
-            <h3>Top 3 Championy</h3>
+            <h3>Top 3 postacie</h3>
             <div id="top3-list"></div>
         </div>
         <div class="side-box">
@@ -1008,19 +595,18 @@
     <!-- MAIN -->
     <main class="main">
         <div class="header">
-            <h1><img class="header-icon" src="botlane.png" alt="Bot Lane"> MARKSMAN GAUNTLET</h1>
-            <div class="subtitle">EVERY MARKSMAN. ONE SHOT.</div>
+            <h1><img class="header-icon" src="lol.png" alt="" onerror="this.style.display='none'"> CHALLENGE</h1>
+            <div class="subtitle">EVERY CHAMPION. ONE LIFE. A → Z.</div>
             <span class="url-badge" id="url-badge">💾 AUTO-SAVE: OK</span>
         </div>
 
         <div class="result-area" id="result-area">
-            <div id="champion-wrapper" style="display:flex;flex-direction:column;align-items:center;width:100%">
+            <div id="champion-wrapper">
                 <img id="champion-icon" src="" alt="">
-                <div class="slot-wrapper" id="slot-wrapper" style="display:none">
-                    <div class="slot-reel" id="slot-reel"></div>
-                </div>
-                <div class="champ-name" id="champ-name">GOTOWY</div>
-                <div class="arch-badge" id="arch-badge" style="display:none"></div>
+                <div class="champ-caption" id="champ-caption"></div>
+                <div class="champ-name" id="champ-name">WYBIERZ POSTAĆ</div>
+                <div class="lane-chips" id="lane-chips"></div>
+                <div class="lane-hint" id="lane-hint" style="display:none">Wybierz linię, na której grasz</div>
                 <div class="drawn-stats" id="drawn-stats">
                     <div class="drawn-stat">
                         <div class="drawn-stat-val" id="ds-wins" style="color:var(--green)">—</div>
@@ -1035,12 +621,12 @@
                         <div class="drawn-stat-label">WR%</div>
                     </div>
                     <div class="drawn-stat">
-                        <div class="drawn-stat-val" id="ds-rank">—</div>
-                        <div class="drawn-stat-label">Ranga</div>
+                        <div class="drawn-stat-val" id="ds-mvp" style="color:var(--gold)">—</div>
+                        <div class="drawn-stat-label">MVP</div>
                     </div>
                     <div class="drawn-stat">
-                        <div class="drawn-stat-val" id="ds-lives">—</div>
-                        <div class="drawn-stat-label">Życia</div>
+                        <div class="drawn-stat-val" id="ds-status">—</div>
+                        <div class="drawn-stat-label">Status</div>
                     </div>
                 </div>
             </div>
@@ -1051,30 +637,33 @@
             </div>
         </div>
 
-        <div class="draw-row" style="display:flex;gap:12px">
-            <button class="btn-draw" id="btn-draw" onclick="drawChampion()" style="flex:2">LOSUJ MARKSMANA</button>
-            <button class="btn-draw" onclick="openPickModal()" style="flex:1;font-size:1em;letter-spacing:3px;border-color:var(--gold);color:var(--gold);background:rgba(179,0,0,0.06)">✦ WYBIERZ</button>
+        <div class="draw-row">
+            <button class="btn-draw" id="btn-skip" onclick="skipChampion()" style="flex:2">⏭ POMIŃ POSTAĆ</button>
+            <button class="btn-draw btn-pick" onclick="openPickModal()" style="flex:1">✦ WYBIERZ</button>
         </div>
 
         <div>
-            <div class="filter-row">
+            <div class="filter-row" id="table-filters">
                 <button class="filter-btn active" onclick="setFilter('all', this)">Wszyscy</button>
                 <button class="filter-btn" onclick="setFilter('alive', this)">Żywi</button>
-                <button class="filter-btn" onclick="setFilter('marksman', this)">Marksman</button>
-                <button class="filter-btn" onclick="setFilter('mage', this)">Mage</button>
-                <button class="filter-btn" onclick="setFilter('fighter', this)">Fighter</button>
+                <button class="filter-btn" onclick="setFilter('dead', this)">Out</button>
+                <button class="filter-btn" onclick="setFilter('unplayed', this)">Niezagrani</button>
+                <button class="filter-btn" onclick="setFilter('TOP', this)">Top</button>
+                <button class="filter-btn" onclick="setFilter('JUNGLE', this)">Jungle</button>
+                <button class="filter-btn" onclick="setFilter('MID', this)">Mid</button>
+                <button class="filter-btn" onclick="setFilter('ADC', this)">ADC</button>
+                <button class="filter-btn" onclick="setFilter('SUPPORT', this)">Support</button>
             </div>
             <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
-                            <th onclick="sortBy('name')">Bohater <span class="sort-arrow">↕</span></th>
-                            <th onclick="sortBy('arch')">Typ <span class="sort-arrow">↕</span></th>
-                            <th onclick="sortBy('wins')">W <span class="sort-arrow">↕</span></th>
-                            <th onclick="sortBy('losses')">L <span class="sort-arrow">↕</span></th>
-                            <th onclick="sortBy('wr')">WR% <span class="sort-arrow">↕</span></th>
-                            <th onclick="sortBy('rank')">Ranga <span class="sort-arrow">↕</span></th>
-                            <th>Życia</th>
+                            <th data-col="name" onclick="sortBy('name')">Bohater <span class="sort-arrow">↕</span></th>
+                            <th data-col="lane" onclick="sortBy('lane')">Linie <span class="sort-arrow">↕</span></th>
+                            <th data-col="wins" onclick="sortBy('wins')">W <span class="sort-arrow">↕</span></th>
+                            <th data-col="losses" onclick="sortBy('losses')">L <span class="sort-arrow">↕</span></th>
+                            <th data-col="wr" onclick="sortBy('wr')">WR% <span class="sort-arrow">↕</span></th>
+                            <th data-col="status" onclick="sortBy('status')">Status <span class="sort-arrow">↕</span></th>
                         </tr>
                     </thead>
                     <tbody id="stats-body"></tbody>
@@ -1085,7 +674,6 @@
         <div class="admin-row">
             <button class="btn-admin" onclick="exportData()">📤 Export</button>
             <button class="btn-admin" onclick="document.getElementById('fileInput').click()">📥 Import</button>
-            <button class="btn-admin" onclick="copyStateToURL()">🔗 Kopiuj URL</button>
             <button class="btn-admin danger" onclick="confirmReset()">⚠ Reset Sezonu</button>
             <input type="file" id="fileInput" accept=".json" onchange="importData(event)" style="display:none">
         </div>
@@ -1104,18 +692,17 @@
         <img class="tooltip-img" id="tooltip-img" src="" alt="">
         <div class="tooltip-body">
             <div class="tooltip-name" id="tooltip-name"></div>
-            <div class="tooltip-row"><span>Klasa</span><span id="tooltip-arch"></span></div>
+            <div class="tooltip-row"><span>Linie</span><span id="tooltip-lanes"></span></div>
             <div class="tooltip-row"><span>Wygrane</span><span id="tooltip-wins" style="color:var(--green)"></span></div>
             <div class="tooltip-row"><span>Przegrane</span><span id="tooltip-losses" style="color:var(--red)"></span></div>
             <div class="tooltip-row"><span>WR%</span><span id="tooltip-wr"></span></div>
-            <div class="tooltip-row"><span>Życia</span><span id="tooltip-lives"></span></div>
-            <div class="tooltip-row"><span>Ranga</span><span id="tooltip-rank"></span></div>
-            <div class="tooltip-rank-bar"><div class="tooltip-rank-fill" id="tooltip-rank-fill"></div></div>
+            <div class="tooltip-row"><span>MVP</span><span id="tooltip-mvps" style="color:var(--gold)"></span></div>
+            <div class="tooltip-row"><span>Status</span><span id="tooltip-status"></span></div>
         </div>
     </div>
 </div>
 
-<!-- MODAL -->
+<!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
         <h3 id="modal-title">POTWIERDŹ</h3>
@@ -1130,13 +717,16 @@
 <!-- PICK MODAL -->
 <div class="modal-overlay" id="pick-overlay">
     <div class="pick-modal">
-        <h3>✦ WYBIERZ CHAMPIONA</h3>
-        <input class="pick-search" id="pick-search" type="text" placeholder="Szukaj po nazwie..." oninput="filterPickGrid()">
-        <div class="pick-filter-row">
-            <button class="filter-btn active" onclick="setPickFilter('all',this)">Wszyscy</button>
-            <button class="filter-btn" onclick="setPickFilter('marksman',this)">Marksman</button>
-            <button class="filter-btn" onclick="setPickFilter('mage',this)">Mage</button>
-            <button class="filter-btn" onclick="setPickFilter('fighter',this)">Fighter</button>
+        <h3>✦ WYBIERZ POSTAĆ</h3>
+        <input class="pick-search" id="pick-search" type="text" placeholder="Szukaj po nazwie (np. kaisa, dr mundo)..." autocomplete="off" oninput="buildPickGrid()">
+        <div class="pick-filter-row" id="pick-filters">
+            <button class="filter-btn active" onclick="setPickLane('all', this)">Wszystkie</button>
+            <button class="filter-btn" onclick="setPickLane('TOP', this)">Top</button>
+            <button class="filter-btn" onclick="setPickLane('JUNGLE', this)">Jungle</button>
+            <button class="filter-btn" onclick="setPickLane('MID', this)">Mid</button>
+            <button class="filter-btn" onclick="setPickLane('ADC', this)">ADC</button>
+            <button class="filter-btn" onclick="setPickLane('SUPPORT', this)">Support</button>
+            <button class="filter-btn" id="pick-unplayed-btn" onclick="togglePickUnplayed(this)">Tylko niezagrani</button>
         </div>
         <div class="pick-grid" id="pick-grid"></div>
         <div style="text-align:center">
@@ -1147,186 +737,423 @@
 
 <script>
 // ══════════════════════════════════════════════
-// DATA
+// DATA — lista postaci (kolejność = kolejność A–Z, pierwsza linia = główna)
 // ══════════════════════════════════════════════
-const archColors = {
-    "marksman": "#f39c12",
-    "mage":     "#9b30ff",
-    "fighter":  "#e05555"
-};
-
-const rankList = [
-    { wins: 0,  label: 'IRON',        color: '#746d65' },
-    { wins: 4,  label: 'BRONZE',      color: '#8c5135' },
-    { wins: 7,  label: 'SILVER',      color: '#a5b1b3' },
-    { wins: 11, label: 'GOLD',        color: '#e2b032' },
-    { wins: 14, label: 'PLATINUM',    color: '#32cd99' },
-    { wins: 17, label: 'EMERALD',     color: '#00ff44' },
-    { wins: 20, label: 'DIAMOND',     color: '#4169e1' },
-    { wins: 24, label: 'MASTER',      color: '#9b30ff' },
-    { wins: 28, label: 'GRANDMASTER', color: '#ff4500' },
-    { wins: 31, label: 'CHALLENGER',  color: '#00ffff' }
+const CHAMPIONS_RAW = [
+    ["Aatrox", "TOP"],
+    ["Ahri", "MID"],
+    ["Akali", "MID"],
+    ["Akshan", "MID"],
+    ["Alistar", "SUPPORT"],
+    ["Ambessa", "TOP"],
+    ["Amumu", "JUNGLE/SUPPORT"],
+    ["Anivia", "MID/TOP"],
+    ["Annie", "MID/SUPPORT"],
+    ["Aphelios", "ADC"],
+    ["Ashe", "ADC"],
+    ["Aurelion Sol", "MID/ADC"],
+    ["Aurora", "MID/TOP"],
+    ["Azir", "MID/TOP"],
+    ["Bard", "SUPPORT"],
+    ["Bel'Veth", "JUNGLE"],
+    ["Blitzcrank", "SUPPORT"],
+    ["Brand", "SUPPORT/MID"],
+    ["Braum", "SUPPORT"],
+    ["Briar", "JUNGLE/TOP"],
+    ["Caitlyn", "ADC/TOP"],
+    ["Camille", "TOP/SUPPORT"],
+    ["Cassiopeia", "MID/TOP"],
+    ["Cho'Gath", "JUNGLE/TOP"],
+    ["Corki", "ADC/TOP"],
+    ["Darius", "TOP/JUNGLE"],
+    ["Diana", "MID/JUNGLE"],
+    ["Dr. Mundo", "TOP/JUNGLE"],
+    ["Draven", "ADC/TOP"],
+    ["Ekko", "MID/JUNGLE"],
+    ["Elise", "JUNGLE/SUPPORT"],
+    ["Evelynn", "JUNGLE"],
+    ["Ezreal", "ADC/MID"],
+    ["Fiddlesticks", "JUNGLE/SUPPORT"],
+    ["Fiora", "TOP/MID"],
+    ["Fizz", "MID/JUNGLE"],
+    ["Galio", "MID/SUPPORT"],
+    ["Gangplank", "TOP/MID"],
+    ["Garen", "TOP/MID"],
+    ["Gnar", "TOP"],
+    ["Gragas", "TOP/JUNGLE"],
+    ["Graves", "JUNGLE/TOP"],
+    ["Gwen", "TOP/JUNGLE"],
+    ["Hecarim", "JUNGLE"],
+    ["Heimerdinger", "TOP/MID"],
+    ["Hwei", "MID/ADC"],
+    ["Illaoi", "TOP/MID"],
+    ["Irelia", "TOP/MID"],
+    ["Ivern", "JUNGLE/SUPPORT"],
+    ["Janna", "SUPPORT"],
+    ["Jarvan", "JUNGLE/SUPPORT"],
+    ["Jax", "TOP/JUNGLE"],
+    ["Jayce", "TOP/JUNGLE"],
+    ["Jhin", "ADC/MID"],
+    ["Jinx", "ADC"],
+    ["K'Sante", "TOP/MID"],
+    ["Kai'Sa", "ADC/MID"],
+    ["Kalista", "ADC/TOP"],
+    ["Karma", "SUPPORT/TOP"],
+    ["Karthus", "JUNGLE/ADC"],
+    ["Kassadin", "MID/TOP"],
+    ["Katarina", "MID/ADC"],
+    ["Kayle", "TOP/MID"],
+    ["Kayn", "JUNGLE/TOP"],
+    ["Kennen", "TOP/MID"],
+    ["Kha'Zix", "JUNGLE"],
+    ["Kindred", "JUNGLE"],
+    ["Kled", "TOP/MID"],
+    ["Kog'Maw", "ADC/MID"],
+    ["LeBlanc", "MID/SUPPORT"],
+    ["Lee Sin", "JUNGLE/SUPPORT"],
+    ["Leona", "SUPPORT"],
+    ["Lillia", "JUNGLE"],
+    ["Lissandra", "MID/TOP"],
+    ["Locke", "MID/JUNGLE"],
+    ["Lucian", "ADC/MID"],
+    ["Lulu", "SUPPORT/ADC"],
+    ["Lux", "SUPPORT/MID"],
+    ["Malphite", "TOP/JUNGLE"],
+    ["Malzahar", "MID/TOP"],
+    ["Maokai", "SUPPORT/JUNGLE"],
+    ["Master Yi", "JUNGLE/TOP"],
+    ["Mel", "MID/ADC"],
+    ["Milio", "SUPPORT"],
+    ["Miss Fortune", "ADC/SUPPORT"],
+    ["Mordekaiser", "TOP/JUNGLE"],
+    ["Morgana", "SUPPORT/MID"],
+    ["Naafiri", "JUNGLE/MID"],
+    ["Nami", "SUPPORT"],
+    ["Nasus", "TOP/MID"],
+    ["Nautilus", "SUPPORT/JUNGLE"],
+    ["Neeko", "SUPPORT/MID"],
+    ["Nidalee", "JUNGLE/SUPPORT"],
+    ["Nilah", "ADC"],
+    ["Nocturne", "JUNGLE/TOP"],
+    ["Nunu & Willump", "JUNGLE/MID"],
+    ["Olaf", "TOP/JUNGLE"],
+    ["Orianna", "MID/SUPPORT"],
+    ["Ornn", "TOP/MID"],
+    ["Pantheon", "SUPPORT/TOP"],
+    ["Poppy", "SUPPORT/TOP"],
+    ["Pyke", "SUPPORT"],
+    ["Qiyana", "JUNGLE/MID"],
+    ["Quinn", "JUNGLE/TOP"],
+    ["Rakan", "SUPPORT"],
+    ["Rammus", "JUNGLE/SUPPORT"],
+    ["Rek'Sai", "JUNGLE/TOP"],
+    ["Rell", "SUPPORT"],
+    ["Renata Glasc", "SUPPORT"],
+    ["Renekton", "TOP/MID"],
+    ["Rengar", "JUNGLE/TOP"],
+    ["Riven", "TOP/MID"],
+    ["Rumble", "TOP/MID"],
+    ["Ryze", "MID/TOP"],
+    ["Samira", "ADC"],
+    ["Sejuani", "JUNGLE/TOP"],
+    ["Senna", "SUPPORT/ADC"],
+    ["Seraphine", "SUPPORT/ADC"],
+    ["Sett", "TOP/SUPPORT"],
+    ["Shaco", "JUNGLE/SUPPORT"],
+    ["Shen", "TOP/SUPPORT"],
+    ["Shyvana", "JUNGLE/TOP"],
+    ["Singed", "TOP/MID"],
+    ["Sion", "TOP/MID"],
+    ["Sivir", "ADC"],
+    ["Skarner", "JUNGLE/SUPPORT"],
+    ["Smolder", "ADC/TOP"],
+    ["Sona", "SUPPORT"],
+    ["Soraka", "SUPPORT"],
+    ["Swain", "SUPPORT/MID"],
+    ["Sylas", "MID/JUNGLE"],
+    ["Syndra", "MID/ADC"],
+    ["Tahm Kench", "SUPPORT/TOP"],
+    ["Taliyah", "MID/JUNGLE"],
+    ["Talon", "JUNGLE/MID"],
+    ["Taric", "SUPPORT"],
+    ["Teemo", "TOP/JUNGLE"],
+    ["Thresh", "SUPPORT"],
+    ["Tristana", "ADC/MID"],
+    ["Trundle", "TOP/JUNGLE"],
+    ["Tryndamere", "TOP/MID"],
+    ["Twisted Fate", "MID/TOP"],
+    ["Twitch", "ADC/SUPPORT"],
+    ["Udyr", "JUNGLE/TOP"],
+    ["Urgot", "TOP/MID"],
+    ["Varus", "ADC/TOP"],
+    ["Vayne", "ADC/TOP"],
+    ["Veigar", "MID/ADC"],
+    ["Vel'Koz", "SUPPORT/MID"],
+    ["Vex", "MID/TOP"],
+    ["Vi", "JUNGLE/SUPPORT"],
+    ["Viego", "JUNGLE/MID"],
+    ["Viktor", "MID/ADC"],
+    ["Vladimir", "MID/TOP"],
+    ["Volibear", "TOP/JUNGLE"],
+    ["Warwick", "JUNGLE/TOP"],
+    ["Wukong", "JUNGLE/TOP"],
+    ["Xayah", "ADC"],
+    ["Xerath", "MID/SUPPORT"],
+    ["Xin Zhao", "JUNGLE/TOP"],
+    ["Yasuo", "MID/TOP"],
+    ["Yone", "MID/TOP"],
+    ["Yorick", "TOP/MID"],
+    ["Yunara", "ADC"],
+    ["Yuumi", "SUPPORT"],
+    ["Zaahen", "TOP/JUNGLE"],
+    ["Zac", "JUNGLE/TOP"],
+    ["Zed", "MID/JUNGLE"],
+    ["Zeri", "ADC/MID"],
+    ["Ziggs", "ADC"],
+    ["Zilean", "SUPPORT/MID"],
+    ["Zoe", "MID/SUPPORT"],
+    ["Zyra", "SUPPORT/JUNGLE"]
 ];
 
-function getChampRank(wins) {
-    let rank = rankList[0];
-    for (const r of rankList) {
-        if (wins >= r.wins) rank = r;
-    }
-    return rank;
+const LANES = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
+const LANE_COLORS = { TOP: '#e0883a', JUNGLE: '#4cc38a', MID: '#9b6dff', ADC: '#f4c550', SUPPORT: '#60a5fa' };
+
+const CHAMPS = CHAMPIONS_RAW.map(([name, lanes], idx) => ({ name, lanes: lanes.split('/'), idx }));
+const DEF = Object.fromEntries(CHAMPS.map(c => [c.name, c]));
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+}
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function norm(s) { return String(s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-const championData = {
-    "Jinx":         { arch:"marksman" },
-    "Ashe":         { arch:"marksman" },
-    "Lucian":       { arch:"marksman" },
-    "Seraphine":    { arch:"mage" },
-    "Brand":        { arch:"mage" },
-    "Nilah":        { arch:"fighter" },
-    "Samira":       { arch:"marksman" },
-    "Vayne":        { arch:"marksman" },
-    "Senna":        { arch:"marksman" },
-    "Caitlyn":      { arch:"marksman" },
-    "Smolder":      { arch:"marksman" },
-    "Draven":       { arch:"marksman" },
-    "Miss Fortune": { arch:"marksman" },
-    "Tristana":     { arch:"marksman" },
-    "Yunara":       { arch:"marksman" },
-    "Kog'Maw":      { arch:"marksman" },
-    "Ezreal":       { arch:"marksman" },
-    "Jhin":         { arch:"marksman" },
-    "Kalista":      { arch:"marksman" },
-    "Kai'Sa":       { arch:"marksman" },
-    "Corki":        { arch:"marksman" },
-    "Xayah":        { arch:"marksman" },
-    "Cassiopeia":   { arch:"mage" },
-    "Sivir":        { arch:"marksman" },
-    "Varus":        { arch:"marksman" },
-    "Ziggs":        { arch:"mage" },
-    "Xerath":        { arch:"mage" },
-    "Mel":          { arch:"mage" }
+// ══════════════════════════════════════════════
+// DATA DRAGON — wersja, mapowanie ID i ikony
+// ══════════════════════════════════════════════
+const FALLBACK_VERSION = '16.21.1';   // awaryjna wersja; na starcie pobieramy najnowszą z versions.json
+const DD_CACHE_KEY = 'challenge_ddragon_v1';
+let ddVersions = [FALLBACK_VERSION];  // [najnowsza, starsze...]
+let idMap = {};                        // norm(nazwa lub id) -> prawdziwe ID z champion.json
+
+// wyjątki, gdzie ID w DDragon różni się od nazwy bez znaków specjalnych
+const ID_EXCEPTIONS = {
+    "Wukong": "MonkeyKing", "Nunu & Willump": "Nunu", "Renata Glasc": "Renata", "Jarvan": "JarvanIV",
+    "Kai'Sa": "Kaisa", "Kha'Zix": "Khazix", "Cho'Gath": "Chogath", "Vel'Koz": "Velkoz",
+    "Bel'Veth": "Belveth", "LeBlanc": "Leblanc"
 };
+function staticId(name) { return ID_EXCEPTIONS[name] || name.replace(/[^A-Za-z0-9]/g, ''); }
+function riotId(name) { return idMap[norm(name)] || staticId(name); }
+
+function iconCandidates(name) {
+    const vers = [...new Set([...ddVersions.slice(0, 2), FALLBACK_VERSION])];
+    const id = riotId(name);
+    return vers.map(v => `https://ddragon.leagueoflegends.com/cdn/${v}/img/champion/${id}.png`);
+}
+function placeholderIcon(name) {
+    const letters = name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || '?';
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='#1a1a1a'/><text x='32' y='41' font-family='Orbitron,monospace' font-size='22' font-weight='700' fill='#b30000' text-anchor='middle'>${letters}</text></svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+// ustawia src z kolejnością: najnowsza wersja -> poprzednia -> wersja awaryjna -> placeholder z inicjałami
+function attachIcon(img, name) {
+    const urls = iconCandidates(name);
+    let i = 0;
+    img.onerror = () => {
+        i++;
+        if (i < urls.length) img.src = urls[i];
+        else { img.onerror = null; img.src = placeholderIcon(name); }
+    };
+    img.src = urls[0];
+}
+
+async function loadDDragon() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(DD_CACHE_KEY) || 'null');
+        if (cached && cached.versions && cached.map) { ddVersions = cached.versions; idMap = cached.map; }
+    } catch (e) {}
+    try {
+        const vRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+        const versions = await vRes.json();
+        const needMap = !Object.keys(idMap).length || versions[0] !== ddVersions[0];
+        let usable = versions[0];
+        if (needMap) {
+            let map = null;
+            // jeśli świeżo wydana wersja nie ma jeszcze champion.json, bierzemy kolejną
+            for (const v of versions.slice(0, 3)) {
+                try {
+                    const cRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/champion.json`);
+                    if (!cRes.ok) continue;
+                    const cj = await cRes.json();
+                    map = {};
+                    Object.values(cj.data).forEach(ch => { map[norm(ch.id)] = ch.id; map[norm(ch.name)] = ch.id; });
+                    usable = v;
+                    break;
+                } catch (e) {}
+            }
+            if (!map) return false;
+            idMap = map;
+        }
+        ddVersions = [usable, ...versions.filter(v => v !== usable).slice(0, 4)];
+        try { localStorage.setItem(DD_CACHE_KEY, JSON.stringify({ versions: ddVersions, map: idMap })); } catch (e) {}
+        const missing = CHAMPS.filter(c => !idMap[norm(c.name)] && !Object.values(idMap).includes(staticId(c.name))).map(c => c.name);
+        if (missing.length) console.warn('Challenge: brak w DDragon (placeholder zamiast ikony):', missing);
+        return true;
+    } catch (e) {
+        console.warn('Challenge: nie udało się pobrać DDragon, używam wersji awaryjnej', e);
+        return false;
+    }
+}
 
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let state = [];        // per-champion stats
-let history = [];      // game history [{champ, result, date}]
-let currentChampion = null;
+const STORAGE_KEY_BASE = 'challenge_v1';
+let STORAGE_KEY = STORAGE_KEY_BASE;   // po zalogowaniu dopisywane _<user_id>
+let state = freshState();             // [{ name, lives, lanes:{LANE:{w,l}}, mvps }]
+let matchLog = [];                    // [{ champ, lane, result, mvp, date }]
+let currentName = null;
+let currentLane = null;
+let manualPick = false;
+let resultLock = false;
+let feedbackTimer = null;
 let sortCol = 'name';
 let sortAsc = true;
 let filterMode = 'all';
-let liveVersion = "16.9.1";
 
-const STORAGE_KEY = 'marksman_gauntlet_v1';
+function freshEntry(def) { return { name: def.name, lives: 1, lanes: {}, mvps: 0 }; }
+function freshState() { return CHAMPS.map(freshEntry); }
+
+// dopasowuje zapisany stan do aktualnej listy postaci (kolejność i komplet zawsze z CHAMPS)
+function normalizeState(arr) {
+    const byName = {};
+    (Array.isArray(arr) ? arr : []).forEach(s => { if (s && s.name) byName[s.name] = s; });
+    return CHAMPS.map(def => {
+        const s = byName[def.name];
+        if (!s) return freshEntry(def);
+        const lanes = {};
+        if (s.lanes && typeof s.lanes === 'object') {
+            Object.keys(s.lanes).forEach(k => {
+                const v = s.lanes[k] || {};
+                lanes[k] = { w: Math.max(0, parseInt(v.w) || 0), l: Math.max(0, parseInt(v.l) || 0) };
+            });
+        }
+        return { name: def.name, lives: s.lives > 0 ? 1 : 0, lanes, mvps: Math.max(0, parseInt(s.mvps) || 0) };
+    });
+}
+
+function statsFor(c, lane) {
+    if (lane) {
+        const s = c.lanes[lane];
+        return { w: s ? (s.w || 0) : 0, l: s ? (s.l || 0) : 0 };
+    }
+    let w = 0, l = 0;
+    for (const k in c.lanes) { w += c.lanes[k].w || 0; l += c.lanes[k].l || 0; }
+    return { w, l };
+}
+function gamesOf(c) { const t = statsFor(c); return t.w + t.l; }
+function wrOf(s) { const g = s.w + s.l; return g > 0 ? s.w / g : -1; }
+function getCurrent() { return currentName ? state.find(c => c.name === currentName) : null; }
 
 // ── CLOUD SYNC (Supabase) ──
-let cloudSaveTimer=null;
-function scheduleCloudSave(){
-  clearTimeout(cloudSaveTimer);
-  cloudSaveTimer=setTimeout(pushToCloud,600); // debounce, żeby nie spamować requestów
+let cloudSaveTimer = null;
+function namespaceStorageKeys(userId) {
+    // localStorage jest wspólny dla przeglądarki — klucz per konto, żeby konta się nie mieszały
+    STORAGE_KEY = STORAGE_KEY_BASE + '_' + userId;
 }
-async function pushToCloud(){
-  const { data:{ session } } = await supabaseClient.auth.getSession();
-  if(!session) return;
-  await supabaseClient.from('nexus_data').upsert({
-    user_id: session.user.id,
-    module: 'marksman_gauntlet',
-    data: { state, history },
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'user_id,module' });
+function scheduleCloudSave() {
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(pushToCloud, 600);
 }
-async function pullFromCloud(){
-  const { data:{ session } } = await supabaseClient.auth.getSession();
-  if(!session) return false;
-  const { data, error } = await supabaseClient
-    .from('nexus_data')
-    .select('data')
-    .eq('user_id', session.user.id)
-    .eq('module', 'marksman_gauntlet')
-    .maybeSingle();
-  if(error || !data) return false;
-  const p = data.data;
-  if(Array.isArray(p.state)) state = p.state;
-  if(Array.isArray(p.history)) history = p.history;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, history }));
-  return true;
+async function pushToCloud() {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+        await supabaseClient.from('nexus_data').upsert({
+            user_id: session.user.id,
+            module: 'challenge',
+            data: { state, matchLog },
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id,module' });
+    } catch (e) { console.warn('Challenge: błąd zapisu do chmury', e); }
+}
+async function pullFromCloud() {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return false;
+        const { data, error } = await supabaseClient
+            .from('nexus_data').select('data')
+            .eq('user_id', session.user.id).eq('module', 'challenge')
+            .maybeSingle();
+        if (error || !data) return false;
+        const p = data.data || {};
+        if (Array.isArray(p.state)) state = normalizeState(p.state);
+        if (Array.isArray(p.matchLog)) matchLog = p.matchLog;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, matchLog })); } catch (e) {}
+        return true;
+    } catch (e) { console.warn('Challenge: błąd pobierania z chmury', e); return false; }
 }
 
 // ── SAVE / LOAD ──
 function saveState() {
-    const data = { state, history };
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        document.getElementById('url-badge').textContent = '💾 AUTO-SAVE: OK';
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, matchLog }));
+        $('url-badge').textContent = '💾 AUTO-SAVE: OK';
         scheduleCloudSave();
-    } catch(e) {
-        document.getElementById('url-badge').textContent = '⚠ SAVE FAILED';
+    } catch (e) {
+        $('url-badge').textContent = '⚠ SAVE FAILED';
     }
 }
-
 function loadState() {
-    // Priority: URL hash > localStorage
-    const hash = location.hash.slice(1);
-    if (hash) {
-        try {
-            const decoded = JSON.parse(atob(hash));
-            state = decoded.state || [];
-            history = decoded.history || [];
-            showToast('📥 Wczytano dane z URL!');
-            // clear hash to avoid re-loading on refresh with stale url
-            history.length && saveState();
-            return;
-        } catch(e) {}
-    }
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
         try {
-            const parsed = JSON.parse(saved);
-            state = parsed.state || [];
-            history = parsed.history || [];
+            const p = JSON.parse(saved);
+            state = normalizeState(p.state);
+            matchLog = Array.isArray(p.matchLog) ? p.matchLog : [];
             return;
-        } catch(e) {}
+        } catch (e) {}
     }
-    // fresh
-    state = Object.keys(championData).map(name => ({ name, wins: 0, losses: 0, lives: 3 }));
-    history = [];
-}
-
-function copyStateToURL() {
-    const data = { state, history };
-    const encoded = btoa(JSON.stringify(data));
-    const url = location.origin + location.pathname + '#' + encoded;
-    navigator.clipboard.writeText(url).then(() => {
-        showToast('🔗 Link z zapisem skopiowany do schowka!');
-    }).catch(() => {
-        prompt('Skopiuj ten link:', url);
-    });
+    state = freshState();
+    matchLog = [];
 }
 
 // ── EXPORT / IMPORT ──
 function exportData() {
-    const blob = new Blob([JSON.stringify({ state, history }, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify({ state, matchLog }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `gauntlet_${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `challenge_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     showToast('📤 Wyeksportowano dane');
 }
-
 function importData(e) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
         try {
-            const parsed = JSON.parse(ev.target.result);
-            state = parsed.state || [];
-            history = parsed.history || [];
+            const p = JSON.parse(ev.target.result);
+            if (!Array.isArray(p.state)) throw new Error('bad format');
+            state = normalizeState(p.state);
+            matchLog = Array.isArray(p.matchLog) ? p.matchLog : [];
             saveState();
             renderAll();
+            autoSelectNext();
             showToast('📥 Import zakończony sukcesem!');
-        } catch(err) {
+        } catch (err) {
             showToast('❌ Błąd importu pliku');
         }
     };
@@ -1335,217 +1162,183 @@ function importData(e) {
 }
 
 // ══════════════════════════════════════════════
-// DRAW CHAMPION
+// KOLEJNOŚĆ A–Z — następna postać
 // ══════════════════════════════════════════════
-function getAliveChampions() {
-    return state.filter(c => c.lives > 0);
-}
-
-function getWeightedPool(alive) {
-    // Champions with fewer games played get higher weight
-    const maxGames = Math.max(...alive.map(c => c.wins + c.losses), 1);
-    return alive.map(c => {
-        const games = c.wins + c.losses;
-        const weight = Math.max(1, maxGames - games + 1);
-        return { ...c, weight };
-    });
-}
-
-function weightedRandom(pool) {
-    const total = pool.reduce((s, c) => s + c.weight, 0);
-    let r = Math.random() * total;
-    for (const c of pool) {
-        r -= c.weight;
-        if (r <= 0) return c;
+// pierwsza żywa, niezagrana postać; z afterName: szukamy od następnej po niej (z zawinięciem)
+function nextCandidate(afterName) {
+    const n = state.length;
+    const start = afterName ? (DEF[afterName].idx + 1) : 0;
+    for (let k = 0; k < n; k++) {
+        const c = state[(start + k) % n];
+        if (c.name === afterName) continue;
+        if (c.lives > 0 && gamesOf(c) === 0) return c;
     }
-    return pool[pool.length - 1];
+    return null;
+}
+function autoSelectNext() {
+    const n = nextCandidate(null);
+    if (n) selectChampion(n.name, null, false);
+    else { currentName = null; currentLane = null; manualPick = false; renderResult(); }
+}
+function skipChampion() {
+    const cur = getCurrent();
+    const n = nextCandidate(cur ? cur.name : null);
+    if (!n) { showToast('Brak innych niezagranych postaci'); return; }
+    playSound('pick');
+    selectChampion(n.name, null, true);
 }
 
-async function drawChampion() {
-    const alive = getAliveChampions();
-    if (alive.length === 0) {
-        showToast('⚠ Brak żywych championów!');
+// ══════════════════════════════════════════════
+// WYBÓR POSTACI / LINII
+// ══════════════════════════════════════════════
+function selectChampion(name, lane, manual) {
+    if (!DEF[name]) return;
+    clearTimeout(feedbackTimer);
+    resultLock = false;
+    currentName = name;
+    manualPick = !!manual;
+    const d = DEF[name];
+    currentLane = (lane && d.lanes.includes(lane)) ? lane : d.lanes[0];
+    renderResult();
+}
+
+function updateGlow() {
+    document.documentElement.style.setProperty('--glow', currentLane ? LANE_COLORS[currentLane] : 'var(--gold)');
+}
+
+function renderLaneChips(c) {
+    const box = $('lane-chips');
+    box.innerHTML = '';
+    const d = DEF[c.name];
+    const multi = d.lanes.length > 1;
+    d.lanes.forEach(l => {
+        const b = el('button', 'lane-chip' + (l === currentLane ? ' active' : '') + (multi ? '' : ' single'));
+        b.style.setProperty('--lane-color', LANE_COLORS[l]);
+        b.style.setProperty('--lane-bg', hexA(LANE_COLORS[l], 0.16));
+        b.appendChild(el('span', 'lane-chip-name', l));
+        const s = statsFor(c, l);
+        if (s.w + s.l > 0) b.appendChild(el('span', 'lane-chip-rec', `${s.w}–${s.l}`));
+        if (multi) b.addEventListener('click', () => {
+            if (resultLock) return;
+            currentLane = l;
+            renderLaneChips(c);
+            updateGlow();
+        });
+        box.appendChild(b);
+    });
+    $('lane-hint').style.display = multi ? 'block' : 'none';
+}
+
+function renderDrawnStats(c) {
+    const t = statsFor(c);
+    const g = t.w + t.l;
+    $('ds-wins').textContent = t.w;
+    $('ds-losses').textContent = t.l;
+    const wrEl = $('ds-wr');
+    wrEl.textContent = g > 0 ? (t.w / g * 100).toFixed(0) + '%' : '—';
+    wrEl.style.color = g > 0 ? (t.w / g >= 0.5 ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
+    $('ds-mvp').textContent = c.mvps ? '★ ' + c.mvps : '—';
+    $('ds-status').textContent = c.lives > 0 ? '❤️' : '💀';
+    $('drawn-stats').style.display = 'flex';
+}
+
+function renderResult() {
+    const c = getCurrent();
+    const nameEl = $('champ-name');
+    const icon = $('champion-icon');
+    nameEl.style.color = '';
+    if (!c || c.lives === 0) {
+        icon.style.display = 'none';
+        $('lane-chips').innerHTML = '';
+        $('lane-hint').style.display = 'none';
+        $('drawn-stats').style.display = 'none';
+        $('action-btns').style.display = 'none';
+        $('champ-caption').textContent = '';
+        const left = state.some(x => x.lives > 0 && gamesOf(x) === 0);
+        nameEl.textContent = left ? 'WYBIERZ POSTAĆ' : 'A–Z UKOŃCZONE 🎉';
+        currentName = null;
+        updateGlow();
         return;
     }
-
-    document.getElementById('btn-draw').disabled = true;
-    document.getElementById('action-btns').style.display = 'none';
-    document.getElementById('champion-icon').style.display = 'none';
-    document.getElementById('arch-badge').style.display = 'none';
-    document.getElementById('champ-name').textContent = '';
-    hideDrawnStats();
-    playSound('draw');
-
-    const pool = getWeightedPool(alive);
-    const picked = weightedRandom(pool);
-
-    // slot machine animation
-    await runSlotMachine(alive, picked);
-
-    currentChampion = state.find(c => c.name === picked.name);
-
-    // show icon - glow uses rank color
-    const data = championData[picked.name];
-    const icon = document.getElementById('champion-icon');
-    const champRank = getChampRank(currentChampion.wins);
-    const glow = champRank.color;
-    document.documentElement.style.setProperty('--glow', glow);
-    // icon.src already set by runSlotMachine (preloaded)
-    icon.style.borderColor = glow;
-    icon.style.boxShadow = `0 0 30px ${glow}`;
-    icon.onerror = () => { icon.style.display = 'none'; };
-    icon.onload = () => { icon.style.display = 'block'; };
-    if (icon.complete && icon.naturalWidth) icon.style.display = 'block';
-
-    // arch badge + rank
-    const archBadge = document.getElementById('arch-badge');
-    archBadge.textContent = `${data.arch.toUpperCase()} · ${champRank.label}`;
-    archBadge.className = `arch-badge`;
-    archBadge.style.borderColor = glow;
-    archBadge.style.color = glow;
-    archBadge.style.display = 'inline-block';
-
-    showDrawnStats(currentChampion, champRank, glow);
-
-    document.getElementById('action-btns').style.display = 'flex';
-    document.getElementById('btn-draw').disabled = false;
+    const idx = DEF[c.name].idx + 1;
+    $('champ-caption').textContent = `#${idx} / ${state.length}` + (manualPick ? ' · wybrana ręcznie' : '');
+    nameEl.textContent = c.name;
+    attachIcon(icon, c.name);
+    icon.style.display = 'block';
+    updateGlow();
+    renderLaneChips(c);
+    renderDrawnStats(c);
+    $('action-btns').style.display = 'flex';
 }
 
-async function runSlotMachine(pool, final) {
-    const wrapper = document.getElementById('slot-wrapper');
-    const reel = document.getElementById('slot-reel');
-    const champName = document.getElementById('champ-name');
-
-    champName.style.display = 'none';
-    wrapper.style.display = 'flex';
-    reel.innerHTML = '';
-
-    const names = pool.map(c => c.name);
-    const spinCount = 18;
-    const items = [];
-    for (let i = 0; i < spinCount - 1; i++) {
-        items.push(names[Math.floor(Math.random() * names.length)]);
-    }
-    items.push(final.name);
-
-    // preload all icons so no blank frames mid-spin
-    await Promise.all(items.map(name => new Promise(res => {
-        const img = new Image();
-        img.onload = img.onerror = res;
-        img.src = getIconUrl(name);
-    })));
-
-    items.forEach(name => {
-        const div = document.createElement('div');
-        div.className = 'slot-item';
-        const img = document.createElement('img');
-        img.src = getIconUrl(name);
-        img.alt = name;
-        img.onerror = () => {
-            img.style.display = 'none';
-            div.style.fontSize = '0.55em';
-            div.style.color = 'var(--gold)';
-            div.style.letterSpacing = '1px';
-            div.textContent = name;
-        };
-        div.appendChild(img);
-        reel.appendChild(div);
-    });
-
-    const itemH = 80;
-    // stop so the LAST item (final champion) is centred in the window –
-    // that means shift = -(spinCount - 1) * itemH  but the wrapper is also 80px,
-    // so we land exactly on the last item with no overshoot / empty space
-    const targetOffset = -(spinCount - 1) * itemH;
-
-    await new Promise(resolve => {
-        let start = null;
-        const duration = 4000;
-
-        function ease(t) {
-            if (t < 0.15) return t / 0.15 * 0.20;
-            if (t < 0.60) return 0.20 + (t - 0.15) / 0.45 * 0.58;
-            return 0.78 + (t - 0.60) / 0.40 * 0.22;
-        }
-
-        function step(ts) {
-            if (!start) start = ts;
-            const progress = Math.min((ts - start) / duration, 1);
-            reel.style.transform = `translateY(${ease(progress) * targetOffset}px)`;
-            if (progress < 1) requestAnimationFrame(step);
-            else { reel.style.transform = `translateY(${targetOffset}px)`; resolve(); }
-        }
-        requestAnimationFrame(step);
-    });
-
-    // slot is now showing the final champion – swap to the big icon seamlessly:
-    // 1. set the real champion-icon src (already in cache)
-    const icon = document.getElementById('champion-icon');
-    icon.style.display = 'none'; // keep hidden until loaded
-    icon.src = getIconUrl(final.name);
-
-    // 2. hide slot wrapper, show name
-    wrapper.style.display = 'none';
-    champName.style.display = 'block';
-    champName.textContent = final.name;
-
-    // 3. show icon once loaded (instant from cache)
-    await new Promise(res => {
-        if (icon.complete && icon.naturalWidth) { icon.style.display = 'block'; res(); }
-        else { icon.onload = () => { icon.style.display = 'block'; res(); }; icon.onerror = res; }
-    });
+// po załadowaniu DDragon podmieniamy ikonę aktualnej postaci (bez ruszania reszty widoku)
+function refreshCurrentIcon() {
+    const c = getCurrent();
+    if (c && !resultLock && $('champion-icon').style.display !== 'none') attachIcon($('champion-icon'), c.name);
 }
 
 // ══════════════════════════════════════════════
 // HANDLE RESULT
 // ══════════════════════════════════════════════
 function handleResult(result, isMvp) {
-    if (!currentChampion) return;
-
-    const entry = state.find(c => c.name === currentChampion.name);
-    if (!entry) return;
+    const entry = getCurrent();
+    if (!entry || resultLock || !currentLane) return;
+    const lane = currentLane;
+    if (!entry.lanes[lane]) entry.lanes[lane] = { w: 0, l: 0 };
 
     if (result === 'WIN') {
-        const oldRank = getChampRank(entry.wins);
-        entry.wins++;
-        const newRank = getChampRank(entry.wins);
+        entry.lanes[lane].w++;
         if (isMvp) entry.mvps = (entry.mvps || 0) + 1;
-        if (newRank.label !== oldRank.label) {
-            entry.lives++;
-            playSound('rankup');
-            setTimeout(() => showToast(`🏆 ${entry.name} awansował na ${newRank.label}! +1 życie ❤️`), 400);
-        } else {
-            playSound('win');
-        }
-        if (isMvp) setTimeout(() => showToast(`★ ${entry.name} zostaje MVP meczu!`), isMvp && newRank.label !== oldRank.label ? 900 : 400);
+        playSound('win');
+        if (isMvp) setTimeout(() => showToast(`★ ${entry.name} zostaje MVP meczu!`), 400);
     } else {
+        entry.lanes[lane].l++;
+        entry.lives = 0;
         playSound('lose');
-        entry.losses++;
-        entry.lives = Math.max(0, entry.lives - 1);
+        setTimeout(() => showToast(`💀 ${entry.name} odpada z challengu`), 400);
     }
 
-    history.unshift({
+    matchLog.unshift({
         champ: entry.name,
+        lane,
         result,
         mvp: !!isMvp,
-        date: new Date().toLocaleString('pl-PL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+        date: new Date().toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
     });
 
     saveState();
     renderAll();
 
-    document.getElementById('action-btns').style.display = 'none';
-    document.getElementById('champion-icon').style.display = 'none';
-    document.getElementById('arch-badge').style.display = 'none';
-    hideDrawnStats();
-    document.getElementById('champ-name').textContent = result === 'WIN' ? (isMvp ? '★ MVP VICTORY' : '✓ VICTORY') : '✗ DEFEAT';
-    document.getElementById('champ-name').style.color = result === 'WIN' ? (isMvp ? 'var(--gold)' : 'var(--green)') : 'var(--red)';
+    resultLock = true;
+    $('action-btns').style.display = 'none';
+    $('champion-icon').style.display = 'none';
+    $('lane-chips').innerHTML = '';
+    $('lane-hint').style.display = 'none';
+    $('drawn-stats').style.display = 'none';
+    $('champ-caption').textContent = `${entry.name} · ${lane}`;
+    $('champ-name').textContent = result === 'WIN' ? (isMvp ? '★ MVP VICTORY' : '✓ VICTORY') : '✗ DEFEAT';
+    $('champ-name').style.color = result === 'WIN' ? (isMvp ? 'var(--gold)' : 'var(--green)') : 'var(--red)';
 
-    setTimeout(() => {
-        document.getElementById('champ-name').textContent = 'GOTOWY';
-        document.getElementById('champ-name').style.color = '';
-        currentChampion = null;
+    clearTimeout(feedbackTimer);
+    feedbackTimer = setTimeout(() => {
+        resultLock = false;
+        currentName = null;
+        autoSelectNext();
     }, 1800);
+}
+
+// ręczna korekta statusu (np. po pomyłce) — przełącza życie postaci
+function toggleLife(name) {
+    const c = state.find(x => x.name === name);
+    if (!c) return;
+    c.lives = c.lives > 0 ? 0 : 1;
+    saveState();
+    renderAll();
+    if (!resultLock) {
+        if (currentName === name && c.lives === 0) autoSelectNext();
+        else if (currentName === name) renderResult();
+    }
+    showToast(c.lives > 0 ? `❤️ ${name} wraca do gry` : `💀 ${name} oznaczona jako out`);
 }
 
 // ══════════════════════════════════════════════
@@ -1554,42 +1347,38 @@ function handleResult(result, isMvp) {
 function renderAll() {
     renderSidebar();
     renderTable();
-    updateRank();
-}
-
-function updateRank() {
-    const totalWins = state.reduce((s, c) => s + c.wins, 0);
-    let rank = rankList[0];
-    for (const r of rankList) {
-        if (totalWins >= r.wins) rank = r;
-    }
-    document.documentElement.style.setProperty('--rank-color', rank.color);
 }
 
 function renderSidebar() {
-    const totalW = state.reduce((s,c) => s+c.wins, 0);
-    const totalL = state.reduce((s,c) => s+c.losses, 0);
+    let totalW = 0, totalL = 0, played = 0, alive = 0;
+    state.forEach(c => {
+        const t = statsFor(c);
+        totalW += t.w; totalL += t.l;
+        if (t.w + t.l > 0) played++;
+        if (c.lives > 0) alive++;
+    });
     const totalG = totalW + totalL;
-    const alive = state.filter(c => c.lives > 0).length;
-    const wr = totalG > 0 ? ((totalW/totalG)*100).toFixed(1) : '—';
+    const wr = totalG > 0 ? ((totalW / totalG) * 100).toFixed(1) + '%' : '—';
+    const pct = state.length ? (played / state.length * 100).toFixed(0) : 0;
 
-    document.getElementById('season-stats').innerHTML = `
+    $('season-stats').innerHTML = `
         <div class="stat-row"><span>Gier</span><span class="stat-val">${totalG}</span></div>
         <div class="stat-row"><span>Wygrane</span><span class="stat-val">${totalW}</span></div>
         <div class="stat-row"><span>Przegrane</span><span class="stat-val">${totalL}</span></div>
-        <div class="stat-row"><span>WR%</span><span class="stat-val">${wr}%</span></div>
+        <div class="stat-row"><span>WR%</span><span class="stat-val">${wr}</span></div>
         <div class="stat-row"><span>Żywi</span><span class="stat-val">${alive}/${state.length}</span></div>
+        <div class="stat-row"><span>Zagrane</span><span class="stat-val">${played}/${state.length}</span></div>
+        <div class="bar-track" style="margin-top:8px"><div class="bar-fill" style="width:${pct}%"></div></div>
     `;
 
     // streak
     let streak = 0, streakType = null;
-    for (const h of history) {
+    for (const h of matchLog) {
         if (!streakType) { streakType = h.result; streak = 1; }
         else if (h.result === streakType) streak++;
         else break;
     }
-    const sNum = document.getElementById('streak-num');
-    const sLbl = document.getElementById('streak-label');
+    const sNum = $('streak-num'), sLbl = $('streak-label');
     if (!streakType) {
         sNum.textContent = '—'; sNum.className = 'streak-num';
         sLbl.textContent = 'BRAK GIER';
@@ -1599,148 +1388,166 @@ function renderSidebar() {
         sLbl.textContent = streakType === 'WIN' ? 'WIN STREAK 🔥' : 'LOSE STREAK 💀';
     }
 
-    // arch bars
-    const archs = ['marksman','mage','fighter'];
-    let archHTML = '';
-    for (const a of archs) {
-        const champs = state.filter(c => championData[c.name]?.arch === a);
-        const w = champs.reduce((s,c)=>s+c.wins,0);
-        const g = champs.reduce((s,c)=>s+c.wins+c.losses,0);
-        const pct = g > 0 ? (w/g*100).toFixed(0) : 0;
-        const col = archColors[a] || 'var(--gold)';
-        archHTML += `
-            <div class="bar-row">
-                <div class="bar-label"><span style="color:${col}">${a.toUpperCase()}</span><span>${pct}% (${g}g)</span></div>
-                <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
-            </div>`;
-    }
-    document.getElementById('arch-bars').innerHTML = archHTML;
-
-    // top3
-    const played = state.filter(c => (c.wins+c.losses) >= 2);
-    played.sort((a,b) => {
-        const wrA = a.wins/(a.wins+a.losses);
-        const wrB = b.wins/(b.wins+b.losses);
-        return wrB - wrA;
+    // winrate per linia
+    const agg = {};
+    LANES.forEach(l => agg[l] = { w: 0, l: 0 });
+    state.forEach(c => { for (const k in c.lanes) if (agg[k]) { agg[k].w += c.lanes[k].w || 0; agg[k].l += c.lanes[k].l || 0; } });
+    let best = null;
+    LANES.forEach(l => {
+        const g = agg[l].w + agg[l].l;
+        if (g >= 3 && (!best || agg[l].w / g > agg[best].w / (agg[best].w + agg[best].l))) best = l;
     });
-    const medals = ['🥇','🥈','🥉'];
-    let top3HTML = '';
-    played.slice(0,3).forEach((c,i) => {
-        const wr = ((c.wins/(c.wins+c.losses))*100).toFixed(0);
-        top3HTML += `<div class="top3-item">
+    $('lane-bars').innerHTML = LANES.map(l => {
+        const g = agg[l].w + agg[l].l;
+        const p = g > 0 ? (agg[l].w / g * 100).toFixed(0) : 0;
+        const col = LANE_COLORS[l];
+        const right = g > 0 ? `${p}% · ${agg[l].w}W ${agg[l].l}L` : '—';
+        return `<div class="bar-row">
+            <div class="bar-label"><span style="color:${col}">${l}${l === best ? ' 👑' : ''}</span><span>${right}</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div>
+        </div>`;
+    }).join('');
+
+    // top 3 (min. 2 gry)
+    const pl = state.filter(c => gamesOf(c) >= 2).sort((a, b) => {
+        const ta = statsFor(a), tb = statsFor(b);
+        return (wrOf(tb) - wrOf(ta)) || ((tb.w + tb.l) - (ta.w + ta.l));
+    });
+    const medals = ['🥇', '🥈', '🥉'];
+    $('top3-list').innerHTML = pl.slice(0, 3).map((c, i) => {
+        const t = statsFor(c);
+        return `<div class="top3-item">
             <span class="top3-medal">${medals[i]}</span>
-            <span>${c.name}</span>
-            <span class="top3-wr">${wr}%</span>
+            <span>${esc(c.name)}</span>
+            <span class="top3-wr">${(wrOf(t) * 100).toFixed(0)}%</span>
         </div>`;
-    });
-    document.getElementById('top3-list').innerHTML = top3HTML || '<div style="opacity:0.4;font-size:0.8em">Min. 2 gry per champion</div>';
+    }).join('') || '<div style="opacity:0.4;font-size:0.8em">Min. 2 gry na postać</div>';
 
-    // history
-    let histHTML = '';
-    history.slice(0,10).forEach(h => {
-        histHTML += `<div class="hist-item ${h.result==='WIN'?'w':'l'}">
-            <span>${h.champ}</span>
-            <span>${h.result==='WIN'?'✓':'✗'}</span>
-            <span class="hist-date">${h.date}</span>
+    // historia
+    $('history-list').innerHTML = matchLog.slice(0, 10).map(h => {
+        const col = LANE_COLORS[h.lane] || 'var(--muted)';
+        return `<div class="hist-item ${h.result === 'WIN' ? 'w' : 'l'}">
+            <span class="hist-name">${esc(h.champ)}</span>
+            <span class="hist-lane" style="color:${col}">${esc(h.lane || '')}</span>
+            <span>${h.result === 'WIN' ? '✓' : '✗'}</span>
+            <span class="hist-date">${esc(h.date)}</span>
         </div>`;
-    });
-    document.getElementById('history-list').innerHTML = histHTML || '<div style="opacity:0.4;font-size:0.8em">Brak historii</div>';
+    }).join('') || '<div style="opacity:0.4;font-size:0.8em">Brak historii</div>';
 }
 
 function renderTable() {
-    let data = [...state];
+    const lane = LANES.includes(filterMode) ? filterMode : null;
+    let rows = state.map(c => ({ c, d: DEF[c.name], s: statsFor(c, lane) }));
 
-    // filter
-    if (filterMode === 'alive') data = data.filter(c => c.lives > 0);
-    else if (['marksman','mage','fighter'].includes(filterMode)) {
-        data = data.filter(c => championData[c.name]?.arch === filterMode);
-    }
-
-    // sort
-    data.sort((a, b) => {
-        let va, vb;
-        if (sortCol === 'name') { va = a.name; vb = b.name; return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va); }
-        if (sortCol === 'arch') { va = championData[a.name]?.arch||''; vb = championData[b.name]?.arch||''; return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va); }
-        if (sortCol === 'wins')   { va = a.wins;   vb = b.wins; }
-        if (sortCol === 'losses') { va = a.losses; vb = b.losses; }
-        if (sortCol === 'rank')   { va = a.wins;   vb = b.wins; }
-        if (sortCol === 'wr') {
-            const ga = a.wins+a.losses, gb = b.wins+b.losses;
-            va = ga>0 ? a.wins/ga : -1;
-            vb = gb>0 ? b.wins/gb : -1;
+    rows = rows.filter(r => {
+        switch (filterMode) {
+            case 'all': return true;
+            case 'alive': return r.c.lives > 0;
+            case 'dead': return r.c.lives === 0;
+            case 'unplayed': return r.c.lives > 0 && gamesOf(r.c) === 0;
+            default: return r.d.lanes.includes(filterMode);
         }
-        return sortAsc ? va-vb : vb-va;
     });
 
-    const tbody = document.getElementById('stats-body');
+    const dir = sortAsc ? 1 : -1;
+    rows.sort((a, b) => {
+        let r = 0;
+        switch (sortCol) {
+            case 'name': r = a.d.idx - b.d.idx; break;
+            case 'lane': r = LANES.indexOf(a.d.lanes[0]) - LANES.indexOf(b.d.lanes[0]); break;
+            case 'wins': r = a.s.w - b.s.w; break;
+            case 'losses': r = a.s.l - b.s.l; break;
+            case 'wr': r = wrOf(a.s) - wrOf(b.s); break;
+            case 'status': r = (a.c.lives > 0 ? 1 : 0) - (b.c.lives > 0 ? 1 : 0); break;
+        }
+        if (r === 0) return a.d.idx - b.d.idx;
+        return r * dir;
+    });
+
+    const tbody = $('stats-body');
     tbody.innerHTML = '';
-    data.forEach((c, i) => {
-        const d = championData[c.name];
-        const games = c.wins + c.losses;
-        const wr = games > 0 ? ((c.wins/games)*100).toFixed(0) : '—';
-        const wrPct = games > 0 ? (c.wins/games*100) : 0;
+    if (!rows.length) {
+        const tr = el('tr'); const td = el('td', 'empty-row', 'Brak wyników'); td.colSpan = 6;
+        tr.appendChild(td); tbody.appendChild(tr);
+        updateSortArrows();
+        return;
+    }
+
+    rows.forEach(({ c, d, s }) => {
+        const g = s.w + s.l;
         const dead = c.lives === 0;
+        const tr = el('tr', dead ? 'eliminated' : '');
 
-        const tr = document.createElement('tr');
-        if (dead) tr.classList.add('eliminated');
+        // bohater
+        const td1 = el('td');
+        const cell = el('div', 'champ-cell');
+        const img = el('img', 'champ-thumb');
+        img.alt = ''; img.loading = 'lazy';
+        attachIcon(img, c.name);
+        cell.appendChild(img);
+        cell.appendChild(el('span', '', c.name));
+        if (c.mvps) cell.appendChild(el('span', 'mvp-star', '★' + (c.mvps > 1 ? ` ×${c.mvps}` : '')));
+        td1.appendChild(cell);
+        tr.appendChild(td1);
 
-        const pipsHTML = [0,1,2].map(i =>
-            `<div class="pip ${i >= c.lives ? 'dead' : ''}"></div>`
-        ).join('');
+        // linie
+        const td2 = el('td');
+        d.lanes.forEach(l => {
+            const ls = statsFor(c, l);
+            const tag = el('span', 'lane-tag' + (lane && l !== lane ? ' dim' : ''), l);
+            tag.style.color = LANE_COLORS[l];
+            if (ls.w + ls.l > 0) tag.appendChild(el('small', '', `${ls.w}–${ls.l}`));
+            td2.appendChild(tag);
+        });
+        tr.appendChild(td2);
 
-        const archColor = archColors[d?.arch] || 'var(--gold)';
-        const champRank = getChampRank(c.wins);
-        const nextRank = rankList.find(r => r.wins > c.wins);
-        const progressToNext = nextRank
-            ? ((c.wins - getChampRank(c.wins).wins) / (nextRank.wins - getChampRank(c.wins).wins) * 100).toFixed(0)
-            : 100;
+        // W / L / WR
+        const tdW = el('td', '', String(s.w)); tdW.style.color = 'var(--green)'; tr.appendChild(tdW);
+        const tdL = el('td', '', String(s.l)); tdL.style.color = 'var(--red)'; tr.appendChild(tdL);
+        const td5 = el('td');
+        const wrCell = el('div', 'wr-bar-cell');
+        wrCell.appendChild(el('span', '', g > 0 ? (s.w / g * 100).toFixed(0) + '%' : '—'));
+        const mini = el('div', 'wr-mini');
+        const fill = el('div', 'wr-mini-fill');
+        fill.style.width = (g > 0 ? s.w / g * 100 : 0) + '%';
+        mini.appendChild(fill); wrCell.appendChild(mini); td5.appendChild(wrCell);
+        tr.appendChild(td5);
 
-        tr.innerHTML = `
-            <td><div class="champ-cell"><img class="champ-thumb" src="${getIconUrl(c.name)}" alt="" onerror="this.style.display='none'" style="border-color:${champRank.color};box-shadow:0 0 6px ${champRank.color}44"><span>${c.name}</span>${c.mvps ? `<span class="mvp-star" title="${c.mvps}× MVP">★${c.mvps>1?` ×${c.mvps}`:''}</span>` : ''}</div></td>
-            <td><span class="arch-tag" style="color:${archColor};border-color:${archColor}">${d?.arch||'?'}</span></td>
-            <td style="color:var(--green)">${c.wins}</td>
-            <td style="color:var(--red)">${c.losses}</td>
-            <td>
-                <div class="wr-bar-cell">
-                    <span>${wr}${games>0?'%':''}</span>
-                    <div class="wr-mini"><div class="wr-mini-fill" style="width:${wrPct}%"></div></div>
-                </div>
-            </td>
-            <td>
-                <div class="rank-cell">
-                    <span class="champ-rank-label" style="color:${champRank.color};border-color:${champRank.color}">${champRank.label}</span>
-                    ${nextRank ? `<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:${progressToNext}%;background:${champRank.color}"></div></div>` : ''}
-                </div>
-            </td>
-            <td>
-                <div style="display:flex;align-items:center;gap:6px">
-                    <div class="lives-pips">${pipsHTML}</div>
-                    <button onclick="adjustLives('${c.name}', 1)" style="padding:1px 6px;font-size:0.75em;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);line-height:1.4" title="+1 życie">+</button>
-                    <button onclick="adjustLives('${c.name}', -1)" style="padding:1px 6px;font-size:0.75em;cursor:pointer;border:1px solid var(--red);background:transparent;color:var(--red);line-height:1.4" title="-1 życie">−</button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(tr);
+        // status (klik = ręczna zmiana)
+        const td6 = el('td');
+        const lb = el('button', 'life-btn' + (dead ? ' dead' : ''), dead ? '💀 OUT' : '❤️');
+        lb.title = dead ? 'Kliknij, aby przywrócić postać do gry' : 'Kliknij, aby oznaczyć jako out';
+        lb.addEventListener('click', () => toggleLife(c.name));
+        td6.appendChild(lb);
+        tr.appendChild(td6);
+
+        // tooltip
         tr.addEventListener('mouseenter', e => showTooltip(c.name, e));
         tr.addEventListener('mouseleave', hideTooltip);
+        tbody.appendChild(tr);
+    });
+    updateSortArrows();
+}
+
+function updateSortArrows() {
+    document.querySelectorAll('thead th').forEach(th => {
+        const active = th.dataset.col === sortCol;
+        th.classList.toggle('sorted', active);
+        const arr = th.querySelector('.sort-arrow');
+        if (arr) arr.textContent = active ? (sortAsc ? '↑' : '↓') : '↕';
     });
 }
 
 function setFilter(mode, btn) {
     filterMode = mode;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#table-filters .filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     renderTable();
 }
 
 function sortBy(col) {
     if (sortCol === col) sortAsc = !sortAsc;
-    else { sortCol = col; sortAsc = true; }
-    // update header arrows
-    document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
-    const headers = ['name','arch','wins','losses','wr','rank','lives'];
-    const idx = headers.indexOf(col);
-    if (idx >= 0) document.querySelectorAll('thead th')[idx]?.classList.add('sorted');
+    else { sortCol = col; sortAsc = (col === 'name' || col === 'lane'); }
     renderTable();
 }
 
@@ -1749,77 +1556,60 @@ function sortBy(col) {
 // ══════════════════════════════════════════════
 function confirmReset() {
     showModal(
-        'RESET SEZONU',
-        'Wszystkie statystyki i historia zostaną usunięte. Tej akcji nie można cofnąć.',
+        '⚠ RESET SEZONU',
+        'Wszystkie postacie wrócą do gry, a statystyki i historia zostaną usunięte. Tej operacji nie można cofnąć.',
         () => {
-            state = Object.keys(championData).map(name => ({ name, wins: 0, losses: 0, lives: 3 }));
-            history = [];
-            currentChampion = null;
+            state = freshState();
+            matchLog = [];
             saveState();
             renderAll();
-            document.getElementById('champ-name').textContent = 'GOTOWY';
-            document.getElementById('champ-name').style.color = '';
-            hideDrawnStats();
+            autoSelectNext();
             showToast('🔄 Sezon zresetowany');
         }
     );
-}
-
-function adjustLives(name, delta) {
-    const entry = state.find(c => c.name === name);
-    if (!entry) return;
-    entry.lives = Math.max(0, entry.lives + delta);
-    saveState();
-    renderAll();
-    showToast(`${delta > 0 ? '❤️ +1' : '💀 -1'} życie: ${name} (${entry.lives})`);
 }
 
 // ══════════════════════════════════════════════
 // TOOLTIP
 // ══════════════════════════════════════════════
 let tooltipTimeout = null;
-const tooltip = document.getElementById('champ-tooltip');
+const tooltip = $('champ-tooltip');
 
 function showTooltip(name, event) {
     clearTimeout(tooltipTimeout);
     tooltipTimeout = setTimeout(() => {
         const c = state.find(s => s.name === name);
         if (!c) return;
-        const d = championData[name];
-        const rank = getChampRank(c.wins);
-        const nextRank = rankList.find(r => r.wins > c.wins);
-        const games = c.wins + c.losses;
-        const wr = games > 0 ? (c.wins / games * 100).toFixed(1) + '%' : '—';
-        const pct = nextRank
-            ? ((c.wins - rank.wins) / (nextRank.wins - rank.wins) * 100).toFixed(0)
-            : 100;
+        const d = DEF[name];
+        const t = statsFor(c);
+        const g = t.w + t.l;
 
-        document.getElementById('tooltip-img').src = getIconUrl(name);
-        document.getElementById('tooltip-name').textContent = name;
-        document.getElementById('tooltip-arch').textContent = d?.arch?.toUpperCase() || '?';
-        document.getElementById('tooltip-arch').style.color = archColors[d?.arch] || 'var(--gold)';
-        document.getElementById('tooltip-wins').textContent = c.wins;
-        document.getElementById('tooltip-losses').textContent = c.losses;
-        document.getElementById('tooltip-wr').textContent = wr;
-        document.getElementById('tooltip-lives').textContent = '❤️'.repeat(Math.min(c.lives, 8)) + (c.lives > 8 ? ` +${c.lives-8}` : '');
-        document.getElementById('tooltip-rank').textContent = rank.label;
-        document.getElementById('tooltip-rank').style.color = rank.color;
-        const fill = document.getElementById('tooltip-rank-fill');
-        fill.style.width = pct + '%';
-        fill.style.background = rank.color;
+        attachIcon($('tooltip-img'), name);
+        $('tooltip-name').textContent = name;
+        const lanesBox = $('tooltip-lanes');
+        lanesBox.innerHTML = '';
+        d.lanes.forEach(l => {
+            const ls = statsFor(c, l);
+            const sp = el('span', 'lane-tag', l + (ls.w + ls.l > 0 ? ` ${ls.w}–${ls.l}` : ''));
+            sp.style.color = LANE_COLORS[l];
+            lanesBox.appendChild(sp);
+        });
+        $('tooltip-wins').textContent = t.w;
+        $('tooltip-losses').textContent = t.l;
+        $('tooltip-wr').textContent = g > 0 ? (t.w / g * 100).toFixed(1) + '%' : '—';
+        $('tooltip-mvps').textContent = c.mvps ? '★ ' + c.mvps : '—';
+        $('tooltip-status').textContent = c.lives > 0 ? '❤️ w grze' : '💀 out';
 
         positionTooltip(event);
         tooltip.classList.add('visible');
     }, 120);
 }
-
 function hideTooltip() {
     clearTimeout(tooltipTimeout);
     tooltip.classList.remove('visible');
 }
-
 function positionTooltip(event) {
-    const tw = 200, th = 280;
+    const tw = 210, th = 280;
     const vw = window.innerWidth, vh = window.innerHeight;
     let x = event.clientX + 14;
     let y = event.clientY - 20;
@@ -1829,7 +1619,6 @@ function positionTooltip(event) {
     tooltip.style.left = x + 'px';
     tooltip.style.top = y + 'px';
 }
-
 document.addEventListener('mousemove', e => {
     if (tooltip.classList.contains('visible')) positionTooltip(e);
 });
@@ -1840,15 +1629,11 @@ document.addEventListener('mousemove', e => {
 let soundEnabled = true;
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
-
-function getAudioCtx() {
-    if (!audioCtx) audioCtx = new AudioCtx();
-    return audioCtx;
-}
+function getAudioCtx() { if (!audioCtx) audioCtx = new AudioCtx(); return audioCtx; }
 
 function toggleSound() {
     soundEnabled = !soundEnabled;
-    const btn = document.getElementById('sound-toggle');
+    const btn = $('sound-toggle');
     btn.textContent = soundEnabled ? '🔊' : '🔇';
     btn.classList.toggle('muted', !soundEnabled);
 }
@@ -1860,37 +1645,27 @@ function playSound(type) {
         if (ctx.state === 'suspended') ctx.resume();
 
         if (type === 'win') {
-            // uplifting fanfare: 3 rising notes
-            const notes = [523, 659, 784]; // C5 E5 G5
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+            [523, 659, 784].forEach((freq, i) => {
+                const osc = ctx.createOscillator(), gain = ctx.createGain();
                 osc.connect(gain); gain.connect(ctx.destination);
-                osc.type = 'sine';
-                osc.frequency.value = freq;
+                osc.type = 'sine'; osc.frequency.value = freq;
                 const t = ctx.currentTime + i * 0.13;
                 gain.gain.setValueAtTime(0, t);
                 gain.gain.linearRampToValueAtTime(0.18, t + 0.04);
                 gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
                 osc.start(t); osc.stop(t + 0.35);
             });
-            // extra shimmer
-            const osc2 = ctx.createOscillator();
-            const g2 = ctx.createGain();
+            const osc2 = ctx.createOscillator(), g2 = ctx.createGain();
             osc2.connect(g2); g2.connect(ctx.destination);
-            osc2.type = 'triangle';
-            osc2.frequency.value = 1568;
+            osc2.type = 'triangle'; osc2.frequency.value = 1568;
             const t2 = ctx.currentTime + 0.38;
             g2.gain.setValueAtTime(0.1, t2);
             g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.4);
             osc2.start(t2); osc2.stop(t2 + 0.4);
 
         } else if (type === 'lose') {
-            // descending sad notes
-            const notes = [392, 330, 262]; // G4 E4 C4
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+            [392, 330, 262].forEach((freq, i) => {
+                const osc = ctx.createOscillator(), gain = ctx.createGain();
                 osc.connect(gain); gain.connect(ctx.destination);
                 osc.type = 'sawtooth';
                 const t = ctx.currentTime + i * 0.18;
@@ -1901,26 +1676,8 @@ function playSound(type) {
                 osc.start(t); osc.stop(t + 0.3);
             });
 
-        } else if (type === 'rankup') {
-            // majestic ascending arpeggio
-            const notes = [523, 659, 784, 1047];
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.type = 'sine';
-                osc.frequency.value = freq;
-                const t = ctx.currentTime + i * 0.1;
-                gain.gain.setValueAtTime(0, t);
-                gain.gain.linearRampToValueAtTime(0.22, t + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-                osc.start(t); osc.stop(t + 0.5);
-            });
-
-        } else if (type === 'draw') {
-            // quick whoosh/click
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
+        } else if (type === 'pick') {
+            const osc = ctx.createOscillator(), gain = ctx.createGain();
             osc.connect(gain); gain.connect(ctx.destination);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(200, ctx.currentTime);
@@ -1929,249 +1686,171 @@ function playSound(type) {
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
             osc.start(); osc.stop(ctx.currentTime + 0.2);
         }
-    } catch(e) {}
+    } catch (e) {}
 }
 
 // ══════════════════════════════════════════════
 // UI UTILS
 // ══════════════════════════════════════════════
 function showToast(msg) {
-    const t = document.getElementById('toast');
+    const t = $('toast');
     t.textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2800);
 }
-
-let modalCallback = null;
 function showModal(title, msg, onConfirm) {
-    document.getElementById('modal-title').textContent = title;
-    document.getElementById('modal-msg').textContent = msg;
-    modalCallback = onConfirm;
-    document.getElementById('modal-confirm').onclick = () => { closeModal(); onConfirm(); };
-    document.getElementById('modal-overlay').classList.add('open');
+    $('modal-title').textContent = title;
+    $('modal-msg').textContent = msg;
+    $('modal-confirm').onclick = () => { closeModal(); onConfirm(); };
+    $('modal-overlay').classList.add('open');
 }
-function closeModal() {
-    document.getElementById('modal-overlay').classList.remove('open');
-}
+function closeModal() { $('modal-overlay').classList.remove('open'); }
 
 // ══════════════════════════════════════════════
 // PICK MODAL
 // ══════════════════════════════════════════════
-let pickFilter = 'all';
-
-function getRiotName(name) {
-    let r = name.replace(/[\s'.]/g, '');
-    if (name === "Kai'Sa")      r = "Kaisa";
-    if (name === "Kog'Maw")     r = "KogMaw";
-    if (name === "Miss Fortune") r = "MissFortune";
-    if (name === "Yunara")      r = "Yunara";
-    return r;
-}
-
-function getIconUrl(name) {
-    return `https://ddragon.leagueoflegends.com/cdn/${liveVersion}/img/champion/${getRiotName(name)}.png`;
-}
+let pickLane = 'all';
+let pickUnplayed = false;
 
 function openPickModal() {
-    pickFilter = 'all';
-    document.querySelectorAll('#pick-overlay .filter-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('#pick-overlay .filter-btn').classList.add('active');
-    document.getElementById('pick-search').value = '';
+    pickLane = 'all';
+    pickUnplayed = false;
+    document.querySelectorAll('#pick-filters .filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('#pick-filters .filter-btn').classList.add('active');
+    $('pick-search').value = '';
     buildPickGrid();
-    document.getElementById('pick-overlay').classList.add('open');
+    $('pick-overlay').classList.add('open');
+    if (window.matchMedia && window.matchMedia('(pointer:fine)').matches) setTimeout(() => $('pick-search').focus(), 60);
 }
-
-function closePickModal() {
-    document.getElementById('pick-overlay').classList.remove('open');
-}
-
-function setPickFilter(mode, btn) {
-    pickFilter = mode;
-    document.querySelectorAll('#pick-overlay .filter-btn').forEach(b => b.classList.remove('active'));
+function closePickModal() { $('pick-overlay').classList.remove('open'); }
+function setPickLane(mode, btn) {
+    pickLane = mode;
+    document.querySelectorAll('#pick-filters .filter-btn:not(#pick-unplayed-btn)').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     buildPickGrid();
 }
-
-function filterPickGrid() {
+function togglePickUnplayed(btn) {
+    pickUnplayed = !pickUnplayed;
+    btn.classList.toggle('active', pickUnplayed);
     buildPickGrid();
 }
 
 function buildPickGrid() {
-    const query = document.getElementById('pick-search').value.toLowerCase();
-    const grid = document.getElementById('pick-grid');
+    const q = $('pick-search').value.trim();
+    const nq = norm(q);
+    const grid = $('pick-grid');
     grid.innerHTML = '';
 
-    let pool = [...state];
-    if (pickFilter !== 'all') pool = pool.filter(c => championData[c.name]?.arch === pickFilter);
-    if (query) pool = pool.filter(c => c.name.toLowerCase().includes(query));
-    pool.sort((a,b) => a.name.localeCompare(b.name));
+    const pool = state.filter(c => {
+        const d = DEF[c.name];
+        if (pickLane !== 'all' && !d.lanes.includes(pickLane)) return false;
+        if (pickUnplayed && !(c.lives > 0 && gamesOf(c) === 0)) return false;
+        if (q && !c.name.toLowerCase().includes(q.toLowerCase()) && !(nq && norm(c.name).includes(nq))) return false;
+        return true;
+    });
 
     pool.forEach(c => {
-        const d = championData[c.name];
+        const d = DEF[c.name];
         const dead = c.lives === 0;
-        const archColor = d?.arch === 'engage' ? 'var(--red)' : d?.arch === 'peel' ? 'var(--blue)' : 'var(--green)';
-        const pipsHTML = [0,1,2].map(i =>
-            `<div class="pip-sm ${i >= c.lives ? 'dead' : ''}"></div>`
-        ).join('');
-
-        const card = document.createElement('div');
-        card.className = `pick-card${dead ? ' dead-card' : ''}`;
-        card.innerHTML = `
-            <img src="${getIconUrl(c.name)}" alt="${c.name}" onerror="this.style.display='none'" style="border:2px solid ${archColors[d?.arch]||'#888'}">
-            <div class="pick-name">${c.name}</div>
-            <div class="pick-arch" style="color:${archColor};border:1px solid ${archColor};font-size:0.6em;letter-spacing:1px;padding:1px 5px">${d?.arch||'?'}</div>
-            <div class="pick-lives">${pipsHTML}</div>
-        `;
+        const t = statsFor(c);
+        const card = el('div', 'pick-card' + (dead ? ' dead-card' : ''));
+        const img = el('img'); img.alt = c.name; img.loading = 'lazy';
+        attachIcon(img, c.name);
+        card.appendChild(img);
+        card.appendChild(el('div', 'pick-name', c.name));
+        const lanesBox = el('div', 'pick-lanes');
+        d.lanes.forEach(l => {
+            const sp = el('span', 'pick-lane', l);
+            sp.style.color = LANE_COLORS[l];
+            lanesBox.appendChild(sp);
+        });
+        card.appendChild(lanesBox);
+        card.appendChild(el('div', 'pick-rec', dead ? '💀 out' : (t.w + t.l > 0 ? `${t.w}–${t.l}` : '—')));
         if (!dead) {
-            card.onclick = () => {
+            card.addEventListener('click', () => {
                 closePickModal();
-                pickChampion(c.name);
-            };
+                playSound('pick');
+                selectChampion(c.name, pickLane !== 'all' ? pickLane : null, true);
+            });
         }
         grid.appendChild(card);
     });
 
-    if (pool.length === 0) {
+    if (!pool.length) {
         grid.innerHTML = '<div style="opacity:0.4;font-size:0.85em;grid-column:1/-1;text-align:center;padding:20px">Brak wyników</div>';
     }
 }
 
-async function pickChampion(name) {
-    const entry = state.find(c => c.name === name);
-    if (!entry) return;
-
-    document.getElementById('btn-draw').disabled = true;
-    document.getElementById('action-btns').style.display = 'none';
-    document.getElementById('champion-icon').style.display = 'none';
-    document.getElementById('arch-badge').style.display = 'none';
-    document.getElementById('slot-wrapper').style.display = 'none';
-
-    currentChampion = entry;
-    const data = championData[name];
-
-    document.getElementById('champ-name').style.display = 'block';
-    document.getElementById('champ-name').textContent = name;
-    document.getElementById('champ-name').style.color = '';
-
-    // icon - glow uses rank color
-    const champRank = getChampRank(currentChampion.wins);
-    const glow = champRank.color;
-    document.documentElement.style.setProperty('--glow', glow);
-    const icon = document.getElementById('champion-icon');
-    icon.src = getIconUrl(name);
-    icon.style.borderColor = glow;
-    icon.style.boxShadow = `0 0 30px ${glow}`;
-    icon.onerror = () => { icon.style.display = 'none'; };
-    icon.onload = () => { icon.style.display = 'block'; };
-
-    // arch badge + rank
-    const archBadge = document.getElementById('arch-badge');
-    archBadge.textContent = `${data.arch.toUpperCase()} · ${champRank.label}`;
-    archBadge.className = `arch-badge`;
-    archBadge.style.borderColor = glow;
-    archBadge.style.color = glow;
-    archBadge.style.display = 'inline-block';
-
-    showDrawnStats(currentChampion, champRank, glow);
-
-    document.getElementById('action-btns').style.display = 'flex';
-    document.getElementById('btn-draw').disabled = false;
-}
-
-// ══════════════════════════════════════════════
-// DRAWN STATS
-// ══════════════════════════════════════════════
-function showDrawnStats(champ, champRank, glow) {
-    const games = champ.wins + champ.losses;
-    const wr = games > 0 ? (champ.wins / games * 100).toFixed(1) + '%' : '—';
-    const livesStr = '❤️'.repeat(Math.min(champ.lives, 8)) + (champ.lives > 8 ? ` +${champ.lives - 8}` : '');
-
-    document.getElementById('ds-wins').textContent = champ.wins;
-    document.getElementById('ds-losses').textContent = champ.losses;
-    document.getElementById('ds-wr').textContent = wr;
-    document.getElementById('ds-wr').style.color = games > 0 ? (champ.wins / games >= 0.5 ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
-    document.getElementById('ds-rank').textContent = champRank.label;
-    document.getElementById('ds-rank').style.color = glow;
-    document.getElementById('ds-lives').textContent = livesStr || '💀';
-    document.getElementById('drawn-stats').style.display = 'flex';
-}
-
-function hideDrawnStats() {
-    document.getElementById('drawn-stats').style.display = 'none';
-}
-
+$('pick-search').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        const first = document.querySelector('#pick-grid .pick-card:not(.dead-card)');
+        if (first) first.click();
+    }
+});
+$('pick-overlay').addEventListener('click', e => { if (e.target === $('pick-overlay')) closePickModal(); });
 
 // ══════════════════════════════════════════════
 // PARTICLES
 // ══════════════════════════════════════════════
-const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
+const canvas = $('bg-canvas');
+const ctx2d = canvas.getContext ? canvas.getContext('2d') : null;
 let particles = [];
 
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 function initParticles() {
     particles = [];
     for (let i = 0; i < 70; i++) {
         particles.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            speed: 0.15 + Math.random() * 0.35,
-            size: 1 + Math.random() * 1.5,
-            drift: (Math.random() - 0.5) * 0.3,
-            opacity: 0.2 + Math.random() * 0.4
+            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+            speed: 0.15 + Math.random() * 0.35, size: 1 + Math.random() * 1.5,
+            drift: (Math.random() - 0.5) * 0.3, opacity: 0.2 + Math.random() * 0.4
         });
     }
 }
-
 function animateParticles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const color = getComputedStyle(document.documentElement).getPropertyValue('--rank-color').trim() || '#c89b3c';
+    if (!ctx2d) return;
+    ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#b30000';
     particles.forEach(p => {
-        p.y -= p.speed;
-        p.x += p.drift;
+        p.y -= p.speed; p.x += p.drift;
         if (p.y < 0) { p.y = canvas.height; p.x = Math.random() * canvas.width; }
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.globalAlpha = p.opacity;
-        ctx.fill();
+        ctx2d.beginPath();
+        ctx2d.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx2d.fillStyle = color;
+        ctx2d.globalAlpha = p.opacity;
+        ctx2d.fill();
     });
-    ctx.globalAlpha = 1;
+    ctx2d.globalAlpha = 1;
     requestAnimationFrame(animateParticles);
 }
 
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
-async function init() {
+function init() {
     resizeCanvas();
     window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
     initParticles();
     animateParticles();
 
-    // fetch latest patch version
-    try {
-        const res = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
-        const v = await res.json();
-        liveVersion = v[0];
-    } catch(e) {}
-
-    loadState();
-    renderAll();
+    // DDragon ładuje się równolegle — po zakończeniu odświeżamy ikony
+    loadDDragon().then(ok => {
+        if (ok) { renderAll(); refreshCurrentIcon(); }
+    });
 
     requireAuth().then(async session => {
-      if (session) {
+        if (!session) return;
+        namespaceStorageKeys(session.user.id);
+        loadState();
+
         document.body.style.visibility = 'visible';
-        const emailEl = document.getElementById('user-email');
+        const emailEl = $('user-email');
         if (emailEl) emailEl.textContent = session.user.email;
 
         const gotCloudData = await pullFromCloud();
-        if (gotCloudData) renderAll(); // dane z chmury nadpisały lokalne — odśwież widok
-      }
+        renderAll();
+        autoSelectNext();
+        if (gotCloudData) showToast(`☁ Zsynchronizowano: ${state.filter(c => gamesOf(c) > 0).length} zagranych postaci`);
     });
 }
 
